@@ -138,6 +138,8 @@ export class TokenService {
       where: { userId, revoked: false },
       data: { revoked: true },
     });
+    await this.auditService.log(userId, AuditAction.LOGOUT_ALL);
+    await this.auditService.log(userId, 'TOKEN_REVOKED_MANUALLY', {});
   }
   /**
    *TODO ======================= REVOKE A SPECIFIC TOKEN METHOD =================

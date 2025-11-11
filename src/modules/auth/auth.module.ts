@@ -8,6 +8,7 @@ import { TokenService } from './token.service';
 import { AuditService } from './audit.service';
 import { AppMailerModule } from '../../common/mailer/mailer.module';
 import { MailService } from '../../common/mailer/mail.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -26,7 +27,9 @@ import { MailService } from '../../common/mailer/mail.service';
     AuditService,
     TokenService,
     JwtStrategy,
+    JwtAuthGuard,
     MailService,
   ],
+  exports: [JwtAuthGuard],
 })
 export class AuthModule {}

@@ -8,7 +8,6 @@ import { RippleModule } from './modules/ripple/ripple.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { HealthController } from './common/controllers/healthcare.controller';
 import { CustomArcjetGuard } from './common/guards/arcjet.guard';
-import { AuthService } from './module/auth/auth.service';
 
 @Module({
   imports: [
@@ -46,7 +45,6 @@ import { AuthService } from './module/auth/auth.service';
       provide: 'APP_GUARD',
       useClass: CustomArcjetGuard,
     },
-    AuthService,
   ],
 })
 export class AppModule {}
