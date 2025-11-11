@@ -11,12 +11,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   /**
-   * ==================  CONFIGURING HELMET =============
+   * TODO==================  CONFIGURING HELMET =============
    */
   app.use(helmet());
   app.use(cookieParser());
   /**
-   * ==================  CONFIGURING CORS =============
+   * TODO==================  CONFIGURING CORS =============
    */
   app.enableCors({
     origin: `http://localhost:${process.env.PORT ?? 3000}`,
@@ -25,7 +25,7 @@ async function bootstrap() {
   });
 
   /**
-   * ==================  PINO OPTIONS & MIDDLEWARE =============
+   * TODO==================  PINO OPTIONS & MIDDLEWARE =============
    */
   const options: Options = {
     transport: {
@@ -52,13 +52,13 @@ async function bootstrap() {
   app.use(loggerMiddleware);
 
   /**
-   * ==================  Add global Exceptional filters =============
+   * TODO==================  Add global Exceptional filters =============
    */
 
   app.useGlobalFilters(new AllExceptionsFilter());
 
   /**
-   * ==================  VALIDATION PIPE INITIALIZATION =============
+   * TODO==================  VALIDATION PIPE INITIALIZATION =============
    */
 
   app.useGlobalPipes(

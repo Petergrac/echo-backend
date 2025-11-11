@@ -20,6 +20,6 @@
     "esModuleInterop": true,
     "isolatedModules": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/common/mailer/templates/**/*"],
   "exclude": ["node_modules", "dist", "**/*.js"]
 }

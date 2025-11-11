@@ -15,7 +15,7 @@ export class TokenService {
   ) {}
 
   /**
-   ** ======================= CREATE ACCESS TOKEN METHOD =================
+   *TODO ======================= CREATE ACCESS TOKEN METHOD =================
    *
    */
   createAccessToken(userId: string): Promise<string> {
@@ -24,7 +24,7 @@ export class TokenService {
   }
 
   /**
-   ** ======================= GENERATE PLAIN TOKEN METHOD =================
+   *TODO ======================= GENERATE PLAIN TOKEN METHOD =================
    *
    */
   private generatePlainToken(): string[] {
@@ -32,7 +32,7 @@ export class TokenService {
   }
 
   /**
-   ** ======================= CREATE REFRESH TOKEN METHOD =================
+   *TODO ======================= CREATE REFRESH TOKEN METHOD =================
    *
    */
   async createRefreshToken(
@@ -58,7 +58,7 @@ export class TokenService {
     return { token: strings[1] + '.' + strings[0], expiresAt };
   }
   /**
-   ** ======================= ROTATE REFRESH TOKEN METHOD =================
+   *TODO ======================= ROTATE REFRESH TOKEN METHOD =================
    *
    */
   /** //! What this method does
@@ -130,7 +130,7 @@ export class TokenService {
     };
   }
   /**
-   ** ======================= REVOKE ALL TOKENS METHOD =================
+   *TODO ======================= REVOKE ALL TOKENS METHOD =================
    *
    */
   async revokeAllForUser(userId: string) {
@@ -140,7 +140,7 @@ export class TokenService {
     });
   }
   /**
-   ** ======================= REVOKE A SPECIFIC TOKEN METHOD =================
+   *TODO ======================= REVOKE A SPECIFIC TOKEN METHOD =================
    *
    */
   async revokeRefreshToken(compoundToken: string) {

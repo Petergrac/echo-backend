@@ -68,6 +68,7 @@ export class AuthService {
       emailToken,
       user.username,
     );
+    await this.auditService.log(user.id, 'SIGNUP_SUCCESS', { ip, userAgent });
     await this.auditService.log(user.id, 'EMAIL_VERIFICATION_SENT', {
       ip,
       userAgent,
@@ -86,6 +87,8 @@ export class AuthService {
     });
     //* 1.Verify the password and user
     if (!user || !(await argon2.verify(user.passwordHash, dto.password))) {
+      //? Log in case the login fails
+      await this.auditService.log(null, 'LOGIN_FAILED', { ip, userAgent });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -93,7 +96,7 @@ export class AuthService {
     const accessToken = await this.tokenService.createAccessToken(user.id);
     const { token: refreshToken, expiresAt } =
       await this.tokenService.createRefreshToken(user.id, ip, userAgent);
-
+    await this.auditService.log(user.id, 'LOGIN_SUCCESS', { ip, userAgent });
     return { user, accessToken, refreshToken, refreshExpiresAt: expiresAt };
   }
 
