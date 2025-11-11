@@ -7,7 +7,6 @@
 generator client {
   provider        = "prisma-client"
   output          = "../src/generated/prisma"
-  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -15,9 +14,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+enum AuditAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  SIGNUP_SUCCESS
+  SIGNUP_FAILED
+  REFRESH_ROTATED
+  REFRESH_REUSED_DETECTED
+  TOKEN_ROTATED
+  LOGOUT
+  LOGOUT_ALL
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_COMPLETED
+  EMAIL_VERIFICATION_SENT
+  EMAIL_VERIFIED
+  TOKEN_REVOKED_MANUALLY
+}
+
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
+  emailVerified Boolean        @default(false)
   username      String         @unique
   passwordHash  String
   createdAt     DateTime       @default(now())
@@ -28,6 +46,7 @@ model User {
 
 model RefreshToken {
   id          String    @id @default(cuid())
+  tokenId     String    @unique 
   userId      String
   hashedToken String
   lastUsedAt  DateTime?
@@ -60,7 +79,7 @@ model EmailToken {
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
-  action    String // e.g., LOGIN_SUCCESS, LOGIN_FAILED, TOKEN_ROTATED, PASSWORD_RESET
+  action    AuditAction// e.g., LOGIN_SUCCESS, LOGIN_FAILED, TOKEN_ROTATED, PASSWORD_RESET
   meta      Json?
   createdAt DateTime @default(now())
 }

@@ -1,8 +1,13 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
+import { AuthController, MailTestController } from './auth.controller';
 import { PrismaService } from '../../common/services/prisma.service';
 import { JwtModule } from '@nestjs/jwt';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { TokenService } from './token.service';
+import { AuditService } from './audit.service';
+import { AppMailerModule } from '../../common/mailer/mailer.module';
+import { MailService } from '../../common/mailer/mail.service';
 
 @Module({
   imports: [
@@ -12,8 +17,16 @@ import { JwtModule } from '@nestjs/jwt';
         signOptions: { expiresIn: '7d' },
       }),
     }),
+    AppMailerModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService, PrismaService],
+  controllers: [AuthController, MailTestController],
+  providers: [
+    AuthService,
+    PrismaService,
+    AuditService,
+    TokenService,
+    JwtStrategy,
+    MailService,
+  ],
 })
 export class AuthModule {}

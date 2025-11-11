@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { IncomingMessage } from 'http';
 import { AllExceptionsFilter } from './common/filters/arcjet-custom.filter';
 import { ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,12 +14,12 @@ async function bootstrap() {
    * ==================  CONFIGURING HELMET =============
    */
   app.use(helmet());
-
+  app.use(cookieParser());
   /**
    * ==================  CONFIGURING CORS =============
    */
   app.enableCors({
-    origin: `http://localhost:${process.env.PORT}`,
+    origin: `http://localhost:${process.env.PORT ?? 3000}`,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
