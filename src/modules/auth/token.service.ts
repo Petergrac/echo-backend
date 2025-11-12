@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../common/services/prisma.service';
 import { randomBytes } from 'crypto';
 import * as argon2 from 'argon2';
-import { AuditService } from './audit.service';
+import { AuditService } from '../../common/services/audit.service';
 import { AuditAction } from '../../generated/prisma/enums';
 
 @Injectable()

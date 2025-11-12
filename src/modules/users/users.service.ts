@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/services/prisma.service';
-import { AuditService } from '../auth/audit.service';
+import { AuditService } from '../../common/services/audit.service';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -59,5 +64,44 @@ export class UsersService {
       userAgent,
     });
     return userDetails;
+  }
+  /**
+   * TODO =============== UPDATE CURRENT USER PROFILE ==========
+   * @param userId
+   * @param dto
+   * @param ip
+   * @param userAgent
+   * @returns ->//? This function returns user with updated fields
+   */
+  async updateProfile(
+    userId: string,
+    dto: UpdateUserDto,
+    ip?: string,
+    userAgent?: string,
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    //*Prevent empty Updates
+    if (Object.keys(dto).length === 0)
+      throw new BadRequestException('No fields for update');
+    const updatedUser = await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: { ...dto },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        bio: true,
+        location: true,
+        website: true,
+        avatar: true,
+        updatedAt: true,
+      },
+    });
+    await this.auditService.log(userId, 'PROFILE_UPDATED', { ip, userAgent });
+    return updatedUser;
   }
 }

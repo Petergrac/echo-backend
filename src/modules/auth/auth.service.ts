@@ -8,7 +8,7 @@ import { TokenService } from './token.service';
 import { PrismaService } from '../../common/services/prisma.service';
 import { LoginDto, SignUpDto } from './dto/auth.dto';
 import * as argon2 from 'argon2';
-import { AuditService } from './audit.service';
+import { AuditService } from '../../common/services/audit.service';
 import { MailService } from '../../common/mailer/mail.service';
 
 @Injectable()

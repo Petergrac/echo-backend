@@ -51,8 +51,13 @@ model User {
   emailVerified Boolean        @default(false)
   username      String         @unique
   passwordHash  String
+  bio           String?
+  avatar        String?   
+  location      String?
+  website       String[]       @default([])
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
   refreshTokens RefreshToken[]
   emailTokens   EmailToken[]
 }
