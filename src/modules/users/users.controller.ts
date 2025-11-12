@@ -6,12 +6,17 @@ import {
   Param,
   Patch,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { FileValidationPipe } from '../../common/pipes/file-validation.pipe';
+import { IsOptional } from 'class-validator';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -37,10 +42,16 @@ export class UsersController {
   }
   //TODO => UPDATE YOUR PROFILE
   @Patch('me')
-  updateTheProfile(@Req() req: Request, @Body() dto: UpdateUserDto) {
-    const userId = (req.user as { id: string }).id;
+  @UseInterceptors(FileInterceptor('avatar'))
+  updateTheProfile(
+    @Req() req: Request,
+    @Body() dto: UpdateUserDto,
+    @UploadedFile(FileValidationPipe)
+    file?: Express.Multer.File,
+  ) {
+    const userId = (req.user as { userId: string }).userId;
     const ip = req.ip;
     const userAgent = req.get('user-agent');
-    return this.usersService.updateProfile(userId, dto, ip, userAgent);
+    return this.usersService.updateProfile(userId, dto, ip, userAgent, file);
   }
 }

@@ -95,7 +95,7 @@ export class AuthController {
 
     const { user, accessToken, refreshToken, refreshExpiresAt } =
       await this.authService.login(dto, ip, userAgent);
-
+    console.log(refreshToken);
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -105,7 +105,6 @@ export class AuthController {
 
     return {
       accessToken,
-      message: 'Email needs to be verified',
       user: { id: user.id, email: user.email, username: user.username },
     };
   }

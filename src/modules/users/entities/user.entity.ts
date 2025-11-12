@@ -5,7 +5,7 @@ export class UserEntity {
   bio?: string | null;
   avatar?: string | null;
   location?: string | null;
-  website?: string[] | [];
+  website?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

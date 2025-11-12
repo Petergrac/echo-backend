@@ -3,15 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../common/services/prisma.service';
 import { AuditService } from '../../common/services/audit.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UsersService {
   constructor(
-    private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly cloudinary: CloudinaryService,
+    private readonly userRepository: UserRepository,
   ) {}
 
   /**
@@ -20,19 +22,9 @@ export class UsersService {
    * @returns //* The logged user details
    */
   async getMe(userId: string, ip?: string, userAgent?: string) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-    if (!user) throw new NotFoundException('User not found');
+    //*Perform read operation on the database
+    const user = await this.userRepository.getUserById(userId);
+
     //? Audit the view
     await this.auditService.log(userId, 'PROFILE_VIEWED', { ip, userAgent });
     return user;
@@ -48,22 +40,14 @@ export class UsersService {
     ip?: string,
     userAgent?: string,
   ) {
-    const userDetails = await this.prisma.user.findUnique({
-      where: { username },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        createdAt: true,
-      },
-    });
-    if (!userDetails) throw new NotFoundException(`${username} not Found`);
+    //* Fetch user by name
+    const user = await this.userRepository.getUserByUserName(username);
     //? Audit the view
-    await this.auditService.log(userDetails.id, 'PROFILE_VIEWED', {
+    await this.auditService.log(user.id, 'PROFILE_VIEWED', {
       ip,
       userAgent,
     });
-    return userDetails;
+    return user;
   }
   /**
    * TODO =============== UPDATE CURRENT USER PROFILE ==========
@@ -78,30 +62,41 @@ export class UsersService {
     dto: UpdateUserDto,
     ip?: string,
     userAgent?: string,
+    file?: Express.Multer.File,
   ) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    //TODO ===> Perform Read on the database and get specific user
+    const user = await this.userRepository.getUserById(userId);
     if (!user) throw new NotFoundException('User not found');
+    let avatarUrl: string | null = '';
+    let publicId: string | null = '';
 
+    //TODO ===> Upload the Image to cloudinary
+    if (file) {
+      const uploadResult = (await this.cloudinary.uploadImage(file)) as {
+        url: string;
+        secure_url: string;
+        public_id: string;
+      };
+      avatarUrl = uploadResult?.url ?? uploadResult?.secure_url;
+      publicId = uploadResult.public_id;
+    }
     //*Prevent empty Updates
     if (Object.keys(dto).length === 0)
       throw new BadRequestException('No fields for update');
-    const updatedUser = await this.prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: { ...dto },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        bio: true,
-        location: true,
-        website: true,
-        avatar: true,
-        updatedAt: true,
-      },
+
+    //TODO ===> Perform PATCH on the database
+    const updatedUser = await this.userRepository.updateUserDetails(
+      userId,
+      dto,
+      avatarUrl,
+      publicId,
+    );
+    //TODO ===> Log the ACTION =========
+    await this.auditService.log(userId, 'PROFILE_UPDATED', {
+      ip,
+      userAgent,
+      changes: Object.keys(dto),
     });
-    await this.auditService.log(userId, 'PROFILE_UPDATED', { ip, userAgent });
     return updatedUser;
   }
 }
