@@ -23,7 +23,16 @@ export class UsersService {
    */
   async getMe(userId: string, ip?: string, userAgent?: string) {
     //*Perform read operation on the database
-    const user = await this.userRepository.getUserById(userId);
+    const user = await this.userRepository.getUserById(userId, {
+      id: true,
+      email: true,
+      username: true,
+      createdAt: true,
+      bio: true,
+      website: true,
+      location: true,
+      avatar: true,
+    });
 
     //? Audit the view
     await this.auditService.log(userId, 'PROFILE_VIEWED', { ip, userAgent });
@@ -41,7 +50,16 @@ export class UsersService {
     userAgent?: string,
   ) {
     //* Fetch user by name
-    const user = await this.userRepository.getUserByUserName(username);
+    const user = await this.userRepository.getUserByUserName(username, {
+      id: true,
+      email: true,
+      username: true,
+      createdAt: true,
+      bio: true,
+      website: true,
+      location: true,
+      avatar: true,
+    });
     //? Audit the view
     await this.auditService.log(user.id, 'PROFILE_VIEWED', {
       ip,
@@ -65,7 +83,7 @@ export class UsersService {
     file?: Express.Multer.File,
   ) {
     //TODO ===> Perform Read on the database and get specific user
-    const user = await this.userRepository.getUserById(userId);
+    const user = await this.userRepository.getUserById(userId, { id: true });
     if (!user) throw new NotFoundException('User not found');
     let avatarUrl: string | null = '';
     let publicId: string | null = '';
@@ -98,5 +116,26 @@ export class UsersService {
       changes: Object.keys(dto),
     });
     return updatedUser;
+  }
+
+  async deleteAccount(userId: string, ip?: string, userAgent?: string) {
+    //* 1. First check if the user is available
+    const user = await this.userRepository.getUserById(userId, {
+      avatarPublicId: true,
+      username: true,
+    });
+    //* 2. Delete the image avatar if available
+    if (user.avatarPublicId) {
+      await this.cloudinary.deleteImage(user.avatarPublicId);
+    }
+    //* 3. Delete refresh tokens and all audits for that user
+    await this.userRepository.deleteUserAccount(userId);
+
+    //* 4. Log the deleted account,
+    await this.auditService.log(userId, 'ACCOUNT_DELETED', {
+      ip,
+      userAgent,
+      user: user.username,
+    });
   }
 }

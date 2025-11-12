@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/services/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
+import { UserSelect } from '../../generated/prisma/models';
 
 @Injectable()
 export class UserRepository {
@@ -10,37 +11,44 @@ export class UserRepository {
     private readonly cloudinary: CloudinaryService,
   ) {}
 
-  async getUserById(userId: string) {
+  /**
+   * /// TODO =================== GET USER DETAILS USING ID ============
+   * @param userId
+   * @param fields
+   * @returns //* This function will return user with the specified id
+   */
+  async getUserById(userId: string, fields: UserSelect) {
     const user = await this.prisma.user.findUnique({
       where: {
         id: userId,
       },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: { ...fields },
     });
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
-
-  async getUserByUserName(username: string) {
+  /**
+   * /// TODO =================== GET USER DETAILS USING USERNAME ============
+   * @param username
+   * @param fields
+   * @returns //* This function will return user with the specified name
+   */
+  async getUserByUserName(username: string, fields: UserSelect) {
     const userDetails = await this.prisma.user.findUnique({
       where: { username },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        createdAt: true,
-      },
+      select: { ...fields },
     });
     if (!userDetails) throw new NotFoundException(`${username} not Found`);
     return userDetails;
   }
-
+  /**
+   * /// TODO =================== UPDATE SPECIFIC USER DETAILS ============
+   * @param userId
+   * @param dto //* User Details
+   * @param avatarUrl //* This is the updated avatar url, with it's public_url
+   * @param publicId //? This tracks the old avatar in case user uploads new one
+   * @returns //* This method will return specified user details
+   */
   async updateUserDetails(
     userId: string,
     dto: UpdateUserDto,
@@ -77,5 +85,20 @@ export class UserRepository {
       },
     });
     return updatedUser;
+  }
+
+  /**
+   * /// TODO =================== DELETE SPECIFIC USER ACCOUNT ============
+   * @param userId
+   * //* This method will delete all user info including the session tokens and activity logs
+   */
+  async deleteUserAccount(userId: string) {
+    await this.prisma.$transaction([
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+      this.prisma.emailToken.deleteMany({ where: { userId } }),
+      this.prisma.auditLog.deleteMany({ where: { userId } }),
+      this.prisma.user.delete({ where: { id: userId } }),
+    ]);
+    return { message: 'Account deleted successfully ' };
   }
 }

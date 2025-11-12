@@ -21,8 +21,6 @@ import {
   LoginDto,
   RequestPasswordResetDto,
   ResetPasswordDto,
-  // RequestPasswordResetDto,
-  // ResetPasswordDto,
 } from './dto/auth.dto';
 import { AuditService } from '../../common/services/audit.service';
 import { MailService } from '../../common/mailer/mail.service';

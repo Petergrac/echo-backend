@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Param,
@@ -16,7 +17,6 @@ import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileValidationPipe } from '../../common/pipes/file-validation.pipe';
-import { IsOptional } from 'class-validator';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -53,5 +53,14 @@ export class UsersController {
     const ip = req.ip;
     const userAgent = req.get('user-agent');
     return this.usersService.updateProfile(userId, dto, ip, userAgent, file);
+  }
+
+  //! ==> DELETE USER PROFILE -->
+  @Delete('me')
+  async deleteAccount(@Req() req: Request) {
+    const userId = (req.user as { userId: string }).userId;
+    const ip = req.ip;
+    const userAgent = req.get('user-agent');
+    await this.usersService.deleteAccount(userId, ip, userAgent);
   }
 }

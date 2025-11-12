@@ -14,8 +14,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 enum AuditAction {
+  // Authentication & Authorization
   LOGIN_SUCCESS
   LOGIN_FAILED
   SIGNUP_SUCCESS
@@ -31,19 +31,57 @@ enum AuditAction {
   EMAIL_VERIFIED
   TOKEN_REVOKED_MANUALLY
 
-
+  // User Profile & Account
   PROFILE_VIEWED
   PROFILE_UPDATED
   AVATAR_UPLOADED
   AVATAR_REMOVED
   ACCOUNT_DELETED
 
+  // Content
   POST_CREATED
   POST_DELETED
   COMMENT_ADDED
   COMMENT_DELETED
 
+  // Rate Limiting & Throttling
+  RATE_LIMIT_EXCEEDED
+  RATE_LIMIT_BYPASS_ATTEMPT
+  RATE_LIMIT_RESET
+  BRUTE_FORCE_ATTEMPT
+  REQUEST_THROTTLED
+
+  // Bot Protection & Security
+  BOT_DETECTED
+  BOT_CHALLENGED
+  BOT_BLOCKED
+  SUSPICIOUS_ACTIVITY
+  MALICIOUS_PAYLOAD_DETECTED
+  SQL_INJECTION_ATTEMPT
+  XSS_ATTEMPT
+  CSRF_ATTEMPT
+
+  // IP & Geolocation
+  IP_BLOCKED
+  IP_ALLOWLISTED
+  IP_BLACKLISTED
+  GEO_BLOCKED
+  UNUSUAL_LOCATION_DETECTED
+
+  // API & Endpoint Security
+  API_KEY_CREATED
+  API_KEY_REVOKED
+  API_KEY_ABUSED
+  ENDPOINT_ABUSE_DETECTED
+  UNUSUAL_ACTIVITY_PATTERN
+
+  // System & Admin
+  ADMIN_LOGIN
+  ADMIN_ACTION
+  CONFIG_UPDATED
+  SECURITY_SETTINGS_CHANGED
 }
+
 
 model User {
   id            String         @id @default(cuid())
@@ -60,7 +98,7 @@ model User {
   updatedAt     DateTime       @updatedAt
 
   refreshTokens RefreshToken[]
-  emailTokens   EmailToken[]
+  emailTokens   EmailToken[]         
 }
 
 model RefreshToken {

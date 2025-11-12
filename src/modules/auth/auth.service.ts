@@ -88,7 +88,11 @@ export class AuthService {
     //* 1.Verify the password and user
     if (!user || !(await argon2.verify(user.passwordHash, dto.password))) {
       //? Log in case the login fails
-      await this.auditService.log(null, 'LOGIN_FAILED', { ip, userAgent });
+      await this.auditService.log(null, 'LOGIN_FAILED', {
+        ip,
+        userAgent,
+        details: dto,
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
