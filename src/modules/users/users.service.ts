@@ -126,10 +126,19 @@ export class UsersService {
     });
     //* 2. Delete the image avatar if available
     if (user.avatarPublicId) {
-      await this.cloudinary.deleteImage(user.avatarPublicId);
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        await this.cloudinary.deleteImage(user.avatarPublicId);
+      } catch (error) {
+        console.error(
+          'Failed to delete Cloudinary avatar:',
+          (error as { message: string }).message,
+        );
+      }
     }
+
     //* 3. Delete refresh tokens and all audits for that user
-    await this.userRepository.deleteUserAccount(userId);
+    const response = await this.userRepository.deleteUserAccount(userId);
 
     //* 4. Log the deleted account,
     await this.auditService.log(userId, 'ACCOUNT_DELETED', {
@@ -137,5 +146,6 @@ export class UsersService {
       userAgent,
       user: user.username,
     });
+    return response;
   }
 }

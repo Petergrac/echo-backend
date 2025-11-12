@@ -4,6 +4,8 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Req,
@@ -57,10 +59,11 @@ export class UsersController {
 
   //! ==> DELETE USER PROFILE -->
   @Delete('me')
+  @HttpCode(204)
   async deleteAccount(@Req() req: Request) {
     const userId = (req.user as { userId: string }).userId;
     const ip = req.ip;
     const userAgent = req.get('user-agent');
-    await this.usersService.deleteAccount(userId, ip, userAgent);
+    return await this.usersService.deleteAccount(userId, ip, userAgent);
   }
 }
