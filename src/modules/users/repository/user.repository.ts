@@ -105,8 +105,38 @@ export class UserRepository {
   /**
    * /// TODO =================== GET ALL USERS (ADMIN ROUTE)============
    */
-  async getAllUsers() {
+  async getAllUsers({
+    page,
+    limit,
+    search,
+    role,
+  }: {
+    page: number;
+    limit: number;
+    search?: string;
+    role?: string;
+  }) {
+    //*TODO Filter Conditions
+    const where: Record<string, object | string> = {};
+    //TODO => BY QUERY
+    if (search) {
+      where.username = {
+        contains: search,
+        mode: 'insensitive',
+      };
+    }
+    //TODO => BY ROLE
+    if (role) {
+      where.role = role;
+    }
+    //TODO ===> GET NUMBER OF USERS => For creating pages
+    const totalUsers = await this.prisma.user.count({ where });
+    //TODO =====> GET USERS BASED ON THE WHERE CONDITION
     const users = await this.prisma.user.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         username: true,
@@ -117,6 +147,19 @@ export class UserRepository {
         emailVerified: true,
       },
     });
-    return users;
+    //TODO =====> CALCULATE NUMBER OF PAGES BASED ON USERS
+    const totalPages = Math.ceil(totalUsers / limit);
+    // TODO ======> RETURN THE RESULT
+    return {
+      data: users,
+      meta: {
+        total: totalUsers,
+        page,
+        limit,
+        totalPages,
+        previousPage: page > 1 ? page - 1 : null,
+        nextPage: page < totalPages ? page + 1 : null,
+      },
+    };
   }
 }

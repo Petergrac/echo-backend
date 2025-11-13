@@ -126,7 +126,12 @@ export class UsersService {
    * @param userAgent
    * @returns //* Deletes user account
    */
-  async deleteAccount(userId: string, ip?: string, userAgent?: string) {
+  async deleteAccount(
+    userId: string,
+    ip?: string,
+    userAgent?: string,
+    role?: 'ADMIN',
+  ) {
     //* 1. First check if the user is available
     const user = await this.userRepository.getUserById(userId, {
       avatarPublicId: true,
@@ -154,21 +159,28 @@ export class UsersService {
       userAgent,
       user: user.username,
     });
+    //* 5. Log the deleted account if it is from user
+    await this.auditService.log(userId, 'ACCOUNT_DELETED_BY_ADMIN', {
+      ip,
+      userAgent,
+    });
     return response;
   }
   /**
    * TODO === ================ GET ALL USERS ============
    * @returns ==> //? Returns all users (admin only)
    */
-  async getallUsers() {
-    return this.userRepository.getAllUsers();
-  }
-  /**
-   * TODO === ================ GET ALL USERS ============
-   * @returns ==> //? Returns all users (admin only)
-   */
-  async deleteUserByAdmin(userId: string, ip?: string, userAgent?: string) {
-    await this.auditService.log(userId, 'ACCOUNT_DELETED', { ip, userAgent });
-    return this.userRepository.deleteUserAccount(userId);
+  async getallUsers({
+    page,
+    limit,
+    search,
+    role,
+  }: {
+    page: number;
+    limit: number;
+    search?: string;
+    role?: string;
+  }) {
+    return this.userRepository.getAllUsers({ page, limit, search, role });
   }
 }

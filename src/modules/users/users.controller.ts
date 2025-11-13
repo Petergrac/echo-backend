@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,6 +8,7 @@ import {
   HttpCode,
   Param,
   Patch,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -80,13 +82,31 @@ export class AdminUsersController {
 
   @Roles('admin')
   @Get()
-  async getAllUsers() {
-    return await this.usersService.getallUsers();
+  async getAllUsers(
+    @Query('q') search?: string,
+    @Query('role') role?: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ) {
+    return await this.usersService.getallUsers({ page, limit, search, role });
   }
 
   @Roles('admin')
   @Delete(':userId')
-  async deleteUserByAdmin(@Param('userId') userId: string) {
-    return await this.usersService.deleteAccount(userId);
+  async deleteUserByAdmin(
+    @Param('userId') userId: string,
+    @Req() req: Request,
+  ) {
+    const ip = req.ip;
+    const userAgent = req.get('user-agent');
+    if ((req.user as { userId: string }).userId === userId) {
+      throw new BadRequestException('Admins cannot delete their own account');
+    }
+    return await this.usersService.deleteAccount(
+      userId,
+      ip,
+      userAgent,
+      'ADMIN',
+    );
   }
 }
