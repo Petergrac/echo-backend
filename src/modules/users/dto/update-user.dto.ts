@@ -9,7 +9,13 @@ import {
 } from 'class-validator';
 
 export class UpdateUserDto extends PartialType(
-  OmitType(UserEntity, ['id', 'email', 'createdAt', 'updatedAt'] as const),
+  OmitType(UserEntity, [
+    'id',
+    'email',
+    'role',
+    'createdAt',
+    'updatedAt',
+  ] as const),
 ) {
   @IsOptional()
   @IsString()

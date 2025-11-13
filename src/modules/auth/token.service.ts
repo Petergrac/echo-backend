@@ -18,8 +18,8 @@ export class TokenService {
    *TODO ======================= CREATE ACCESS TOKEN METHOD =================
    *
    */
-  createAccessToken(userId: string): Promise<string> {
-    const payload = { sub: userId };
+  createAccessToken(userId: string, role: string): Promise<string> {
+    const payload = { sub: userId, role: role };
     return this.jwt.signAsync(payload, { expiresIn: '15m' });
   }
 
@@ -83,6 +83,18 @@ export class TokenService {
     //* Find a given token based on the token Id
     const candidate = await this.prisma.refreshToken.findUnique({
       where: { tokenId },
+      select: {
+        id: true,
+        userId: true,
+        hashedToken: true,
+        revoked: true,
+        expiresAt: true,
+        user: {
+          select: {
+            role: true,
+          },
+        },
+      },
     });
     if (!candidate) throw new ForbiddenException('Invalid refresh token');
     // * Verify the user refresh token id with that in the database
@@ -123,8 +135,11 @@ export class TokenService {
       ip,
       userAgent,
     );
+
+    const role = (candidate.user as { role: string }).role;
     return {
       token: newCompound.token,
+      role,
       expiresAt: newCompound.expiresAt,
       userId: candidate.userId,
     };

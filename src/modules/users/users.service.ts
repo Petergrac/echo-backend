@@ -6,7 +6,7 @@ import {
 import { AuditService } from '../../common/services/audit.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
-import { UserRepository } from './user.repository';
+import { UserRepository } from './repository/user.repository';
 
 @Injectable()
 export class UsersService {
@@ -118,6 +118,14 @@ export class UsersService {
     return updatedUser;
   }
 
+  /**
+   *
+   * TODO =============== DELETE A SPECIFIC USER ACCOUNT (ADMIN & OWNER) ==========
+   * @param userId
+   * @param ip
+   * @param userAgent
+   * @returns //* Deletes user account
+   */
   async deleteAccount(userId: string, ip?: string, userAgent?: string) {
     //* 1. First check if the user is available
     const user = await this.userRepository.getUserById(userId, {
@@ -147,5 +155,20 @@ export class UsersService {
       user: user.username,
     });
     return response;
+  }
+  /**
+   * TODO === ================ GET ALL USERS ============
+   * @returns ==> //? Returns all users (admin only)
+   */
+  async getallUsers() {
+    return this.userRepository.getAllUsers();
+  }
+  /**
+   * TODO === ================ GET ALL USERS ============
+   * @returns ==> //? Returns all users (admin only)
+   */
+  async deleteUserByAdmin(userId: string, ip?: string, userAgent?: string) {
+    await this.auditService.log(userId, 'ACCOUNT_DELETED', { ip, userAgent });
+    return this.userRepository.deleteUserAccount(userId);
   }
 }

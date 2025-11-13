@@ -14,6 +14,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserType {
+  user
+  admin
+}
+
 enum AuditAction {
   // Authentication & Authorization
   LOGIN_SUCCESS
@@ -91,6 +96,7 @@ model User {
   passwordHash  String
   bio           String?
   avatar        String? 
+  role          UserType       @default(user) 
   avatarPublicId String?  
   location      String?
   website       String?

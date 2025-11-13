@@ -1,11 +1,17 @@
+enum user {
+  user,
+  admin,
+}
 export class UserEntity {
   id: string;
   email: string;
+  createdAt: string;
+  updatedAt: string;
   username: string;
-  bio?: string | null;
-  avatar?: string | null;
-  location?: string | null;
-  website?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  bio: string;
+  location: string;
+  website: string;
+  avatar: string;
+  role: user;
+  emailVerified: boolean;
 }

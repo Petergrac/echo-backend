@@ -70,7 +70,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
         });
       }
     }
-    console.log(exception);
     // Handle all other exceptions
     const message =
       exception instanceof HttpException

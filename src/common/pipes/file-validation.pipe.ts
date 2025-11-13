@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, PipeTransform, BadRequestException } from '@nestjs/common';
 
 @Injectable()

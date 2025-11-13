@@ -153,9 +153,10 @@ export class AuthController {
       token: newRefreshToken,
       expiresAt,
       userId,
+      role,
     } = await this.tokenService.rotateRefreshToken(refreshToken, ip, userAgent);
 
-    const accessToken = await this.tokenService.createAccessToken(userId);
+    const accessToken = await this.tokenService.createAccessToken(userId, role);
 
     res.cookie('refresh_token', newRefreshToken, {
       httpOnly: true,

@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../common/services/prisma.service';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
-import { UserSelect } from '../../generated/prisma/models';
+import { PrismaService } from '../../../common/services/prisma.service';
+import { UpdateUserDto } from '../dto/update-user.dto';
+import { CloudinaryService } from '../../../common/cloudinary/cloudinary.service';
+import { UserSelect } from '../../../generated/prisma/models';
 
 @Injectable()
 export class UserRepository {
@@ -100,5 +100,23 @@ export class UserRepository {
       this.prisma.user.delete({ where: { id: userId } }),
     ]);
     return { message: 'Account deleted successfully ' };
+  }
+
+  /**
+   * /// TODO =================== GET ALL USERS (ADMIN ROUTE)============
+   */
+  async getAllUsers() {
+    const users = await this.prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        location: true,
+        website: true,
+        avatar: true,
+        emailVerified: true,
+      },
+    });
+    return users;
   }
 }

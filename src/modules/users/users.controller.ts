@@ -5,7 +5,6 @@ import {
   ForbiddenException,
   Get,
   HttpCode,
-  HttpStatus,
   Param,
   Patch,
   Req,
@@ -19,6 +18,8 @@ import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileValidationPipe } from '../../common/pipes/file-validation.pipe';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RoleGuard } from '../../common/guards/roles.guard';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -65,5 +66,27 @@ export class UsersController {
     const ip = req.ip;
     const userAgent = req.get('user-agent');
     return await this.usersService.deleteAccount(userId, ip, userAgent);
+  }
+}
+
+/**
+ *TODO ============ ADMIN ROUTES ====================
+ *
+ */
+@UseGuards(JwtAuthGuard, RoleGuard)
+@Controller('admin/users')
+export class AdminUsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Roles('admin')
+  @Get()
+  async getAllUsers() {
+    return await this.usersService.getallUsers();
+  }
+
+  @Roles('admin')
+  @Delete(':userId')
+  async deleteUserByAdmin(@Param('userId') userId: string) {
+    return await this.usersService.deleteAccount(userId);
   }
 }

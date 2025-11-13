@@ -51,7 +51,10 @@ export class AuthService {
 
     //* 3. Generate access token
 
-    const accessToken = await this.tokenService.createAccessToken(user.id);
+    const accessToken = await this.tokenService.createAccessToken(
+      user.id,
+      user.role,
+    );
 
     //* 4. Generate refresh token (hashed in DB)
     const { token: refreshToken, expiresAt } =
@@ -97,7 +100,10 @@ export class AuthService {
     }
 
     //* 2. Create access token and refresh token
-    const accessToken = await this.tokenService.createAccessToken(user.id);
+    const accessToken = await this.tokenService.createAccessToken(
+      user.id,
+      user.role,
+    );
     const { token: refreshToken, expiresAt } =
       await this.tokenService.createRefreshToken(user.id, ip, userAgent);
     await this.auditService.log(user.id, 'LOGIN_SUCCESS', { ip, userAgent });
