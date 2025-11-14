@@ -36,6 +36,10 @@ enum AuditAction {
   EMAIL_VERIFIED
   TOKEN_REVOKED_MANUALLY
 
+  // Echo & Media
+  ECHO_CREATED
+  ECHO_DELETED
+
   // User Profile & Account
   PROFILE_VIEWED
   PROFILE_UPDATED
@@ -77,10 +81,12 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
+
   refreshTokens RefreshToken[]
   emailTokens   EmailToken[]   
   notifications     Notification[] @relation("UserNotifications") //? Notifications received by this user
   sentNotifications Notification[] @relation("NotificationFrom") //? Notification sent by this user
+  echoes        Echo[]  
   followers     Follow[]      @relation("Followers")
   following     Follow[]      @relation("Following")
 }
@@ -160,3 +166,33 @@ model Notification {
   from      User      @relation("NotificationFrom", fields: [fromId], references: [id])
 }
 
+model Echo {
+  id        String   @id @default(cuid())
+  authorId  String
+  content   String?            // allow media-only posts
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  media     Media[]
+  // likes     Like[]    // if/when you add likes later
+  // ripples   Ripple[]  // if/when you add comments later
+  // reechoes  ReEcho[]  // if/when you add reecho later
+
+  @@index([authorId, createdAt])
+}
+
+// New Media model (one or many per echo)
+model Media {
+  id        String   @id @default(cuid())
+  echoId    String
+  url       String
+  publicId  String?   // cloudinary public id
+  mimetype  String
+  sensitivity Boolean  @default(false)
+  size      Int?      // bytes
+  createdAt DateTime  @default(now())
+
+  echo Echo @relation(fields: [echoId], references: [id], onDelete: Cascade)
+}

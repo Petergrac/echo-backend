@@ -1,42 +1,44 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
+  UseGuards,
+  Req,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import { EchoService } from './echo.service';
 import { CreateEchoDto } from './dto/create-echo.dto';
-import { UpdateEchoDto } from './dto/update-echo.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { Request } from 'express';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileValidationPipe } from './pipes/file-validation.pipe';
 
 @Controller('echo')
+@UseGuards(JwtAuthGuard)
 export class EchoController {
   constructor(private readonly echoService: EchoService) {}
-
+  /**
+   * TODO ================ CREATE AN ECHO WITH FILE UPLOADS =============
+   * @param dto
+   * @param req
+   * @param files
+   * @returns
+   */
   @Post()
-  create(@Body() createEchoDto: CreateEchoDto) {
-    return this.echoService.create(createEchoDto);
+  @UseInterceptors(FilesInterceptor('media', 5))
+  async createEcho(
+    @Body() dto: CreateEchoDto,
+    @Req() req: Request,
+    @UploadedFiles(FileValidationPipe) files: Express.Multer.File[],
+  ) {
+    const userId = (req.user as { userId: string }).userId;
+    const ip = req.ip;
+    const userAgent = req.get('user-agent');
+    console.log(files[0].size);
+    console.log(dto.content);
+    return await this.echoService.createEcho(userId, dto, files,ip,userAgent);
   }
 
-  @Get()
-  findAll() {
-    return this.echoService.findAll();
-  }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.echoService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEchoDto: UpdateEchoDto) {
-    return this.echoService.update(+id, updateEchoDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.echoService.remove(+id);
-  }
 }
