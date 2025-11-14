@@ -21,10 +21,8 @@ import {
   LoginDto,
   RequestPasswordResetDto,
   ResetPasswordDto,
-  // RequestPasswordResetDto,
-  // ResetPasswordDto,
 } from './dto/auth.dto';
-import { AuditService } from './audit.service';
+import { AuditService } from '../../common/services/audit.service';
 import { MailService } from '../../common/mailer/mail.service';
 
 @Controller('auth')
@@ -95,7 +93,7 @@ export class AuthController {
 
     const { user, accessToken, refreshToken, refreshExpiresAt } =
       await this.authService.login(dto, ip, userAgent);
-
+    console.log(refreshToken);
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -105,7 +103,6 @@ export class AuthController {
 
     return {
       accessToken,
-      message: 'Email needs to be verified',
       user: { id: user.id, email: user.email, username: user.username },
     };
   }
@@ -156,9 +153,10 @@ export class AuthController {
       token: newRefreshToken,
       expiresAt,
       userId,
+      role,
     } = await this.tokenService.rotateRefreshToken(refreshToken, ip, userAgent);
 
-    const accessToken = await this.tokenService.createAccessToken(userId);
+    const accessToken = await this.tokenService.createAccessToken(userId, role);
 
     res.cookie('refresh_token', newRefreshToken, {
       httpOnly: true,

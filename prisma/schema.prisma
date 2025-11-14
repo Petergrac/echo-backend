@@ -14,8 +14,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserType {
+  user
+  admin
+}
 
 enum AuditAction {
+  // Authentication & Authorization
   LOGIN_SUCCESS
   LOGIN_FAILED
   SIGNUP_SUCCESS
@@ -30,7 +35,32 @@ enum AuditAction {
   EMAIL_VERIFICATION_SENT
   EMAIL_VERIFIED
   TOKEN_REVOKED_MANUALLY
+
+  // User Profile & Account
+  PROFILE_VIEWED
+  PROFILE_UPDATED
+  ACCOUNT_DELETED
+
+  // Rate Limiting & Throttling
+  RATE_LIMIT_EXCEEDED
+  RATE_LIMIT_BYPASS_ATTEMPT
+  RATE_LIMIT_RESET
+
+  // Bot Protection & Security
+  BOT_DETECTED
+  BOT_CHALLENGED
+  BOT_BLOCKED
+  SUSPICIOUS_ACTIVITY
+  CSRF_ATTEMPT
+
+  // IP & Geolocation
+  IP_BLOCKED
+
+  // System & Admin
+  ADMIN_LOGIN
+  ACCOUNT_DELETED_BY_ADMIN
 }
+
 
 model User {
   id            String         @id @default(cuid())
@@ -38,10 +68,21 @@ model User {
   emailVerified Boolean        @default(false)
   username      String         @unique
   passwordHash  String
+  bio           String?
+  avatar        String? 
+  role          UserType       @default(user) 
+  avatarPublicId String?  
+  location      String?
+  website       String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
   refreshTokens RefreshToken[]
-  emailTokens   EmailToken[]
+  emailTokens   EmailToken[]   
+  notifications     Notification[] @relation("UserNotifications") //? Notifications received by this user
+  sentNotifications Notification[] @relation("NotificationFrom") //? Notification sent by this user
+  followers     Follow[]      @relation("Followers")
+  following     Follow[]      @relation("Following")
 }
 
 model RefreshToken {
@@ -83,3 +124,39 @@ model AuditLog {
   meta      Json?
   createdAt DateTime @default(now())
 }
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("Following", fields: [followerId], references: [id])
+  following   User     @relation("Followers", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+}
+
+enum NotificationType {
+  FOLLOW          // When someone follows you
+  LIKE            // When someone likes your post
+  COMMENT         // When someone comments on your post
+  MENTION         // When someone mentions you
+  SHARE           // When someone shares your post
+  MESSAGE         // When you receive a message
+  SYSTEM          // System notifications
+  ACHIEVEMENT     // When you earn an achievement
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String                          // user receiving the notification
+  fromId    String                          // user who triggered the notification
+  type      NotificationType
+  read      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  user      User      @relation("UserNotifications", fields: [userId], references: [id])
+  from      User      @relation("NotificationFrom", fields: [fromId], references: [id])
+}
+

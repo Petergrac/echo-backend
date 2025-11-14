@@ -5,10 +5,9 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { EchoModule } from './modules/echo/echo.module';
 import { RippleModule } from './modules/ripple/ripple.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
 import { HealthController } from './common/controllers/healthcare.controller';
 import { CustomArcjetGuard } from './common/guards/arcjet.guard';
-import { AuthService } from './module/auth/auth.service';
+import { CommonModule } from './common/module/common.module';
 
 @Module({
   imports: [
@@ -30,15 +29,15 @@ import { AuthService } from './module/auth/auth.service';
         fixedWindow({
           mode: 'LIVE',
           window: '60s', // 10 second fixed window
-          max: 2, // Allow a maximum of 2 requests
+          max: 5, // Allow a maximum of 2 requests
         }),
       ],
     }),
+    CommonModule,
     AuthModule,
     UsersModule,
     EchoModule,
     RippleModule,
-    NotificationsModule,
   ],
   controllers: [HealthController],
   providers: [
@@ -46,7 +45,6 @@ import { AuthService } from './module/auth/auth.service';
       provide: 'APP_GUARD',
       useClass: CustomArcjetGuard,
     },
-    AuthService,
   ],
 })
 export class AppModule {}

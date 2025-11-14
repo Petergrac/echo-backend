@@ -1,0 +1,106 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  v2 as Cloudinary,
+  UploadApiErrorResponse,
+  UploadApiResponse,
+} from 'cloudinary';
+
+// Proper type definitions
+interface CloudinaryUploader {
+  upload_stream: (
+    options: any,
+    callback?: (
+      error?: UploadApiErrorResponse,
+      result?: UploadApiResponse,
+    ) => void,
+  ) => {
+    end: (buffer: Buffer) => void;
+  };
+  destroy: (
+    publicId: string,
+    options: { resource_type?: string },
+    callback?: (error: any, result: any) => void,
+  ) => void;
+}
+
+interface CloudinaryDeleteResponse {
+  result: string;
+}
+
+interface TypedCloudinary {
+  uploader: CloudinaryUploader;
+}
+
+@Injectable()
+export class CloudinaryService {
+  private readonly cloudinary: TypedCloudinary;
+
+  constructor(@Inject('CLOUDINARY') cloudinary: typeof Cloudinary) {
+    this.cloudinary = cloudinary as unknown as TypedCloudinary;
+  }
+
+  async uploadImage(file: Express.Multer.File): Promise<UploadApiResponse> {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    return new Promise((resolve, reject) => {
+      this.cloudinary.uploader
+        .upload_stream(
+          {
+            folder: 'user_avatar',
+            resource_type: 'image',
+            transformation: [
+              { width: 512, height: 512, crop: 'fill', gravity: 'face' },
+            ],
+          },
+          (error?: UploadApiErrorResponse, result?: UploadApiResponse) => {
+            if (error) {
+              const err = new Error(
+                `Cloudinary upload failed: ${error.message}`,
+              );
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              (err as any).http_code = error.http_code;
+              reject(err);
+              return;
+            }
+            if (!result) {
+              reject(new Error('Cloudinary upload failed: No result returned'));
+              return;
+            }
+            resolve(result);
+          },
+        )
+        .end(file.buffer);
+    });
+  }
+
+  async deleteImage(publicId: string): Promise<CloudinaryDeleteResponse> {
+    return new Promise((resolve, reject) => {
+      this.cloudinary.uploader.destroy(
+        publicId,
+        {
+          resource_type: 'image',
+        },
+        (error: any, result: CloudinaryDeleteResponse) => {
+          if (error) {
+            reject(new Error(`Cloudinary deletion failed: ${error.message}`));
+            return;
+          }
+          if (result.result !== 'ok') {
+            reject(new Error(`Failed to delete image: ${result.result}`));
+            return;
+          }
+          resolve(result);
+        },
+      );
+    });
+  }
+
+  // Helper method to extract public_id from Cloudinary URL
+  extractPublicId(imageUrl: string): string {
+    const matches = imageUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.\w+$/);
+    return matches ? matches[1] : imageUrl;
+  }
+}

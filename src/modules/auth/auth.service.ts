@@ -8,7 +8,7 @@ import { TokenService } from './token.service';
 import { PrismaService } from '../../common/services/prisma.service';
 import { LoginDto, SignUpDto } from './dto/auth.dto';
 import * as argon2 from 'argon2';
-import { AuditService } from './audit.service';
+import { AuditService } from '../../common/services/audit.service';
 import { MailService } from '../../common/mailer/mail.service';
 
 @Injectable()
@@ -51,7 +51,10 @@ export class AuthService {
 
     //* 3. Generate access token
 
-    const accessToken = await this.tokenService.createAccessToken(user.id);
+    const accessToken = await this.tokenService.createAccessToken(
+      user.id,
+      user.role,
+    );
 
     //* 4. Generate refresh token (hashed in DB)
     const { token: refreshToken, expiresAt } =
@@ -88,12 +91,19 @@ export class AuthService {
     //* 1.Verify the password and user
     if (!user || !(await argon2.verify(user.passwordHash, dto.password))) {
       //? Log in case the login fails
-      await this.auditService.log(null, 'LOGIN_FAILED', { ip, userAgent });
+      await this.auditService.log(null, 'LOGIN_FAILED', {
+        ip,
+        userAgent,
+        details: dto,
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
     //* 2. Create access token and refresh token
-    const accessToken = await this.tokenService.createAccessToken(user.id);
+    const accessToken = await this.tokenService.createAccessToken(
+      user.id,
+      user.role,
+    );
     const { token: refreshToken, expiresAt } =
       await this.tokenService.createRefreshToken(user.id, ip, userAgent);
     await this.auditService.log(user.id, 'LOGIN_SUCCESS', { ip, userAgent });

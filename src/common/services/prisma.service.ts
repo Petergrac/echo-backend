@@ -8,9 +8,11 @@ export class PrismaService
 {
   async onModuleInit(): Promise<void> {
     await this.$connect();
+    console.log('Database connected successfully!');
   }
 
   async onModuleDestroy(): Promise<void> {
     await this.$disconnect();
+    console.log('Database disconnected successfully!');
   }
 }
