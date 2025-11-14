@@ -39,54 +39,26 @@ enum AuditAction {
   // User Profile & Account
   PROFILE_VIEWED
   PROFILE_UPDATED
-  AVATAR_UPLOADED
-  AVATAR_REMOVED
   ACCOUNT_DELETED
-  USER_FOLLOWED
-
-  // Content
-  POST_CREATED
-  POST_DELETED
-  COMMENT_ADDED
-  COMMENT_DELETED
 
   // Rate Limiting & Throttling
   RATE_LIMIT_EXCEEDED
   RATE_LIMIT_BYPASS_ATTEMPT
   RATE_LIMIT_RESET
-  BRUTE_FORCE_ATTEMPT
-  REQUEST_THROTTLED
 
   // Bot Protection & Security
   BOT_DETECTED
   BOT_CHALLENGED
   BOT_BLOCKED
   SUSPICIOUS_ACTIVITY
-  MALICIOUS_PAYLOAD_DETECTED
-  SQL_INJECTION_ATTEMPT
-  XSS_ATTEMPT
   CSRF_ATTEMPT
 
   // IP & Geolocation
   IP_BLOCKED
-  IP_ALLOWLISTED
-  IP_BLACKLISTED
-  GEO_BLOCKED
-  UNUSUAL_LOCATION_DETECTED
-
-  // API & Endpoint Security
-  API_KEY_CREATED
-  API_KEY_REVOKED
-  API_KEY_ABUSED
-  ENDPOINT_ABUSE_DETECTED
-  UNUSUAL_ACTIVITY_PATTERN
 
   // System & Admin
   ADMIN_LOGIN
-  ADMIN_ACTION
-  CONFIG_UPDATED
   ACCOUNT_DELETED_BY_ADMIN
-  SECURITY_SETTINGS_CHANGED
 }
 
 
@@ -107,6 +79,8 @@ model User {
 
   refreshTokens RefreshToken[]
   emailTokens   EmailToken[]   
+  notifications     Notification[] @relation("UserNotifications") //? Notifications received by this user
+  sentNotifications Notification[] @relation("NotificationFrom") //? Notification sent by this user
   followers     Follow[]      @relation("Followers")
   following     Follow[]      @relation("Following")
 }
@@ -162,3 +136,27 @@ model Follow {
 
   @@unique([followerId, followingId])
 }
+
+enum NotificationType {
+  FOLLOW          // When someone follows you
+  LIKE            // When someone likes your post
+  COMMENT         // When someone comments on your post
+  MENTION         // When someone mentions you
+  SHARE           // When someone shares your post
+  MESSAGE         // When you receive a message
+  SYSTEM          // System notifications
+  ACHIEVEMENT     // When you earn an achievement
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String                          // user receiving the notification
+  fromId    String                          // user who triggered the notification
+  type      NotificationType
+  read      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  user      User      @relation("UserNotifications", fields: [userId], references: [id])
+  from      User      @relation("NotificationFrom", fields: [fromId], references: [id])
+}
+

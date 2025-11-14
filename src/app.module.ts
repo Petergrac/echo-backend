@@ -5,7 +5,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { EchoModule } from './modules/echo/echo.module';
 import { RippleModule } from './modules/ripple/ripple.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
 import { HealthController } from './common/controllers/healthcare.controller';
 import { CustomArcjetGuard } from './common/guards/arcjet.guard';
 import { CommonModule } from './common/module/common.module';
@@ -39,7 +38,6 @@ import { CommonModule } from './common/module/common.module';
     UsersModule,
     EchoModule,
     RippleModule,
-    NotificationsModule,
   ],
   controllers: [HealthController],
   providers: [

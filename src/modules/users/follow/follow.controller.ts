@@ -8,7 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { FollowService } from './follow.service';
 import { Request } from 'express';
 

@@ -7,12 +7,16 @@ import {
   FollowUser,
   PaginatedResponse,
   ToggleFollowResponse,
-} from '../../common/types/follow.types';
-import { FollowRepository } from './repository/follow.repository';
+} from '../../../common/types/follow.types';
+import { FollowRepository } from '../repository/follow.repository';
+import { NotificationService } from '../../notifications/notifications.service';
 
 @Injectable()
 export class FollowService {
-  constructor(private readonly followRepository: FollowRepository) {}
+  constructor(
+    private readonly followRepository: FollowRepository,
+    private readonly notificationService: NotificationService,
+  ) {}
   /**
    * TODO ------===================== TOGGLE FOLLOW ===========
    * @param targetUserId
@@ -44,14 +48,19 @@ export class FollowService {
         currentUserId,
         targetUserId,
       );
+      //* 4. Create follow notification
+      await this.notificationService.createFollowNotification(
+        targetUserId,
+        currentUserId,
+      );
       return { action: 'followed', following: result.following };
     }
   }
 
   /**
    * TODO ======================= UNFOLLOW A USER ================
-   * @param targetUserId 
-   * @param currentUserId 
+   * @param targetUserId
+   * @param currentUserId
    * @returns //* This function return a message when you successfully unfollow a user
    */
   async unfollowUser(
@@ -76,13 +85,13 @@ export class FollowService {
 
     return { message: 'Successfully unfollowed user' };
   }
-/**
- * TODO ====================== GET SPECIFIC USER'S FOLLOWERS =======
- * @param userId 
- * @param page -> navigate page by page
- * @param limit -> list the limit of follow per request
- * @returns //* List of followers of a given user page by page
- */
+  /**
+   * TODO ====================== GET SPECIFIC USER'S FOLLOWERS =======
+   * @param userId
+   * @param page -> navigate page by page
+   * @param limit -> list the limit of follow per request
+   * @returns //* List of followers of a given user page by page
+   */
   async getFollowers(
     userId: string,
     page: number = 1,
@@ -98,13 +107,13 @@ export class FollowService {
       validLimit,
     );
   }
-/**
- * TODO ===================== GET ALL THE USERS YOU ARE FOLLOWING =========
- * @param userId 
- * @param page 
- * @param limit 
- * @returns //* List of users the current user is following
- */
+  /**
+   * TODO ===================== GET ALL THE USERS YOU ARE FOLLOWING =========
+   * @param userId
+   * @param page
+   * @param limit
+   * @returns //* List of users the current user is following
+   */
   async getFollowing(
     userId: string,
     page: number = 1,
@@ -112,7 +121,7 @@ export class FollowService {
   ): Promise<PaginatedResponse<FollowUser>> {
     //* 1. Validate pagination parameters
     const validPage = Math.max(1, page);
-    const validLimit = Math.max(1, Math.min(limit, 100)); 
+    const validLimit = Math.max(1, Math.min(limit, 100));
 
     return await this.followRepository.getFollowing(
       userId,
@@ -120,12 +129,12 @@ export class FollowService {
       validLimit,
     );
   }
-/**
- * TODO========================= GET THE FOLLOW STATUS OF THE USER
- * @param currentUserId 
- * @param targetUserId 
- * @returns //* boolean of isFollowing the target user.
- */
+  /**
+   * TODO========================= GET THE FOLLOW STATUS OF THE USER
+   * @param currentUserId
+   * @param targetUserId
+   * @returns //* boolean of isFollowing the target user.
+   */
   async getFollowStatus(
     currentUserId: string,
     targetUserId: string,
