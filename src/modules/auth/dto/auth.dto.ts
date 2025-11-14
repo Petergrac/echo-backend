@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, MinLength, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  MinLength,
+  IsOptional,
+  IsUrl,
+} from 'class-validator';
 
 // TODO ====================  SIGNUP DTO ===============
 export class SignUpDto {
@@ -10,6 +16,20 @@ export class SignUpDto {
 
   @MinLength(8, { message: 'Password must be at least 8 characters long.' })
   password: string;
+
+  @IsOptional()
+  @MinLength(3, {
+    message: 'Please enter a valid location with at least 3 characters',
+  })
+  location?: string;
+
+  @IsOptional()
+  @IsUrl({}, { message: 'please enter a valid url' })
+  website?: string;
+
+  @IsOptional()
+  @IsNotEmpty({message: "bio cannot be empty"})
+  bio?: string;
 }
 //TODO ===================== LOGIN DTO ===========
 export class LoginDto {
