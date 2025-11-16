@@ -19,6 +19,20 @@ enum UserType {
   admin
 }
 
+enum NotificationType {
+  FOLLOW          // When someone follows you
+  LIKE            // When someone likes your post
+  COMMENT         // When someone comments on your post
+  MENTION         // When someone mentions you
+  SHARE           // When someone shares your post
+  MESSAGE         // When you receive a message
+  SYSTEM          // System notifications
+  ACHIEVEMENT     // When you earn an achievement
+  RIPPLE         // New comment on your echo
+  RIPPLE_REPLY   // Reply to your comment
+  REECHO
+}
+
 enum AuditAction {
   // Authentication & Authorization
   LOGIN_SUCCESS
@@ -84,6 +98,10 @@ model User {
 
   refreshTokens RefreshToken[]
   emailTokens   EmailToken[]   
+  likes        Like[]
+  ripples      Ripple[]
+  reechoes     ReEcho[]
+  bookmarks    Bookmark[]
   notifications     Notification[] @relation("UserNotifications") //? Notifications received by this user
   sentNotifications Notification[] @relation("NotificationFrom") //? Notification sent by this user
   echoes        Echo[]  
@@ -143,47 +161,34 @@ model Follow {
   @@unique([followerId, followingId])
 }
 
-enum NotificationType {
-  FOLLOW          // When someone follows you
-  LIKE            // When someone likes your post
-  COMMENT         // When someone comments on your post
-  MENTION         // When someone mentions you
-  SHARE           // When someone shares your post
-  MESSAGE         // When you receive a message
-  SYSTEM          // System notifications
-  ACHIEVEMENT     // When you earn an achievement
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String                          // user receiving the notification
-  fromId    String                          // user who triggered the notification
-  type      NotificationType
-  read      Boolean   @default(false)
-  createdAt DateTime  @default(now())
-
-  user      User      @relation("UserNotifications", fields: [userId], references: [id])
-  from      User      @relation("NotificationFrom", fields: [fromId], references: [id])
-}
 
 model Echo {
   id        String   @id @default(cuid())
   authorId  String
-  content   String?            // allow media-only posts
+  content   String?            
   deleted   Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  sensitive Boolean  @default(false)
 
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   media     Media[]
-  // likes     Like[]    // if/when you add likes later
-  // ripples   Ripple[]  // if/when you add comments later
-  // reechoes  ReEcho[]  // if/when you add reecho later
+  
+  // Engagement relations
+  likes     Like[]
+  ripples   Ripple[]
+  reechoes  ReEcho[]
+  bookmarks Bookmark[]
+  echoHashtags EchoHashtag[]
 
+  // Enhanced indexes for engagement queries
   @@index([authorId, createdAt])
+  @@index([createdAt])
+  @@index([deleted])
+  @@index([authorId, deleted, createdAt])
+  notifications Notification[]
 }
-
-// New Media model (one or many per echo)
+// TODO ========================== New Media model (one or many per echo)
 model Media {
   id        String   @id @default(cuid())
   echoId    String
@@ -191,8 +196,118 @@ model Media {
   publicId  String?   // cloudinary public id
   mimetype  String
   sensitivity Boolean  @default(false)
-  size      Int?      // bytes
+  resourceType String?
   createdAt DateTime  @default(now())
 
   echo Echo @relation(fields: [echoId], references: [id], onDelete: Cascade)
+}
+
+//TODO ==================== ENGAGEMENT MODELS ====================
+//*
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  echoId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  echo Echo @relation(fields: [echoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, echoId])
+  @@index([echoId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Ripple {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  userId    String
+  echoId    String
+  parentId  String?  // For threaded replies
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  echo   Echo   @relation(fields: [echoId], references: [id], onDelete: Cascade)
+  parent Ripple? @relation("RippleReplies", fields: [parentId], references: [id])
+  replies Ripple[] @relation("RippleReplies")
+
+  @@index([echoId, createdAt])
+  @@index([userId, createdAt])
+  @@index([parentId])
+  notifications Notification[]
+}
+
+model ReEcho {
+  id        String   @id @default(cuid())
+  userId    String
+  echoId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  echo Echo @relation(fields: [echoId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, echoId])
+  @@index([echoId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  echoId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  echo Echo @relation(fields: [echoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, echoId])
+  @@index([userId, createdAt])
+  @@index([echoId])
+}
+
+// TODO ==================== HASHTAG SYSTEM ====================
+model Hashtag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  echoHashtags EchoHashtag[]
+  
+  @@index([name])
+  @@index([createdAt])
+}
+
+model EchoHashtag {
+  id        String   @id @default(cuid())
+  echoId    String
+  hashtagId String
+
+  echo    Echo    @relation(fields: [echoId], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@unique([echoId, hashtagId])
+  @@index([hashtagId])
+}
+
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   // user receiving the notification
+  fromId    String   // user who triggered the notification
+  type      NotificationType
+  echoId    String?  // link to the echo that triggered notification
+  rippleId  String?  // for comment replies
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user   User @relation("UserNotifications", fields: [userId], references: [id])
+  from   User @relation("NotificationFrom", fields: [fromId], references: [id])
+  echo   Echo? @relation(fields: [echoId], references: [id])
+  ripple Ripple? @relation(fields: [rippleId], references: [id])
+
+  @@index([userId, read, createdAt])
+  @@index([type, createdAt])
 }

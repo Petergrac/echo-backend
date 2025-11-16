@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import {
   v2 as Cloudinary,
   UploadApiErrorResponse,
@@ -61,7 +66,7 @@ export class CloudinaryService {
           },
           (error?: UploadApiErrorResponse, result?: UploadApiResponse) => {
             if (error) {
-              const err = new Error(
+              const err = new InternalServerErrorException(
                 `Cloudinary upload failed: ${error.message}`,
               );
               // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -70,7 +75,7 @@ export class CloudinaryService {
               return;
             }
             if (!result) {
-              reject(new Error('Cloudinary upload failed: No result returned'));
+              reject('Cloudinary upload failed: No result returned');
               return;
             }
             resolve(result);
@@ -84,20 +89,23 @@ export class CloudinaryService {
    * @param publicId
    * @returns
    */
-  async deleteImage(publicId: string): Promise<CloudinaryDeleteResponse> {
+  async deleteFile(
+    publicId: string,
+    resource_type: string,
+  ): Promise<CloudinaryDeleteResponse> {
     return new Promise((resolve, reject) => {
       this.cloudinary.uploader.destroy(
         publicId,
         {
-          resource_type: 'auto',
+          resource_type,
         },
         (error: any, result: CloudinaryDeleteResponse) => {
           if (error) {
-            reject(new Error(`Cloudinary deletion failed: ${error.message}`));
+            reject(`Cloudinary deletion failed: ${error.message}`);
             return;
           }
           if (result.result !== 'ok') {
-            reject(new Error(`Failed to delete the file: ${result.result}`));
+            reject(`Failed to delete the file: ${result.result}`);
             return;
           }
           resolve(result);
@@ -114,8 +122,8 @@ export class CloudinaryService {
 
   /**
    * TODO ========================== UPLOAD MEDIA FILES FOR ECHO =============
-   * @param file 
-   * @returns 
+   * @param file
+   * @returns
    */
   async uploadFile(file: Express.Multer.File) {
     if (!file) {

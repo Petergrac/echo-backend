@@ -62,7 +62,7 @@ export class UserRepository {
     });
     //* Delete the old image if public id is available
     if (user?.avatarPublicId && publicId) {
-      await this.cloudinary.deleteImage(user.avatarPublicId);
+      await this.cloudinary.deleteFile(user.avatarPublicId, 'image');
     }
     //? Update the database
     const updatedUser = await this.prisma.user.update({
