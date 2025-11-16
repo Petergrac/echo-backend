@@ -1,8 +1,11 @@
 // src/engagement/repositories/like.repository.ts
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
-import { BaseRepository } from '../../common/base/repository.base';
-import { PrismaService } from '../../common/services/prisma.service';
-
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import { BaseRepository } from '../../../common/base/repository.base';
+import { PrismaService } from '../../../common/services/prisma.service';
 
 export interface CreateLikeDto {
   userId: string;
@@ -25,9 +28,11 @@ export class LikeRepository extends BaseRepository {
     super(prisma);
   }
 
-  async like(createLikeDto: CreateLikeDto): Promise<{ like: any; notificationNeeded: boolean }> {
+  async like(
+    createLikeDto: CreateLikeDto,
+  ): Promise<{ like: any; notificationNeeded: boolean }> {
     return this.executeTransaction(async (prisma) => {
-      // Check if like already exists
+      //* Check if like already exists
       const existingLike = await prisma.like.findUnique({
         where: {
           userId_echoId: {
@@ -41,7 +46,7 @@ export class LikeRepository extends BaseRepository {
         throw new ConflictException('You have already liked this echo');
       }
 
-      // Get echo to check ownership for notification
+      //* Get echo to check ownership for notification
       const echo = await prisma.echo.findUnique({
         where: { id: createLikeDto.echoId },
         select: { authorId: true },
@@ -51,7 +56,7 @@ export class LikeRepository extends BaseRepository {
         throw new NotFoundException('Echo not found');
       }
 
-      // Create the like
+      //* Create the like
       const like = await prisma.like.create({
         data: createLikeDto,
         include: {
@@ -66,7 +71,7 @@ export class LikeRepository extends BaseRepository {
         },
       });
 
-      // Determine if notification is needed (not liking your own echo)
+      //? Determine if notification is needed (not liking your own echo)
       const notificationNeeded = echo.authorId !== createLikeDto.userId;
 
       return { like, notificationNeeded };
@@ -99,7 +104,11 @@ export class LikeRepository extends BaseRepository {
     });
   }
 
-  async getLikesByEchoId(echoId: string, page: number = 1, limit: number = 20): Promise<{ likes: LikeWithUser[]; total: number }> {
+  async getLikesByEchoId(
+    echoId: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ likes: LikeWithUser[]; total: number }> {
     const skip = (page - 1) * limit;
 
     const [likes, total] = await Promise.all([
@@ -124,7 +133,11 @@ export class LikeRepository extends BaseRepository {
     return { likes, total };
   }
 
-  async getUserLikes(userId: string, page: number = 1, limit: number = 20): Promise<{ likes: any[]; total: number }> {
+  async getUserLikes(
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ likes: any[]; total: number }> {
     const skip = (page - 1) * limit;
 
     const [likes, total] = await Promise.all([
@@ -179,4 +192,14 @@ export class LikeRepository extends BaseRepository {
       where: { echoId },
     });
   }
+
+  async getUserLikesBatch(userId: string, echoIds: string[]): Promise<{ echoId: string }[]> {
+  return this.prisma.like.findMany({
+    where: {
+      userId,
+      echoId: { in: echoIds },
+    },
+    select: { echoId: true },
+  });
+}
 }

@@ -10,7 +10,13 @@ import {
 } from '../../../common/types/follow.types';
 import { FollowRepository } from '../repository/follow.repository';
 import { NotificationService } from '../../notifications/notifications.service';
+import { NotificationType } from '../../../generated/prisma/enums';
 
+interface dataType {
+  targetUserId: string;
+  fromUserId: string;
+  type: NotificationType;
+}
 @Injectable()
 export class FollowService {
   constructor(
@@ -49,10 +55,11 @@ export class FollowService {
         targetUserId,
       );
       //* 4. Create follow notification
-      await this.notificationService.createFollowNotification(
+      await this.notificationService.createNotification({
+        fromUserId: currentUserId,
         targetUserId,
-        currentUserId,
-      );
+        type: 'FOLLOW',
+      });
       return { action: 'followed', following: result.following };
     }
   }

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../common/services/prisma.service';
+import { PrismaService } from '../../../common/services/prisma.service';
 
 export interface EngagementCounts {
   likes: number;
@@ -15,12 +15,12 @@ export class EngagementCountRepository {
   async getCountsForEcho(echoId: string): Promise<EngagementCounts> {
     const [likes, ripples, reechoes, bookmarks] = await Promise.all([
       this.prisma.like.count({ where: { echoId } }),
-      this.prisma.ripple.count({ 
-        where: { 
-          echoId, 
+      this.prisma.ripple.count({
+        where: {
+          echoId,
           deleted: false,
-          parentId: null 
-        } 
+          parentId: null,
+        },
       }),
       this.prisma.reEcho.count({ where: { echoId } }),
       this.prisma.bookmark.count({ where: { echoId } }),
@@ -29,10 +29,12 @@ export class EngagementCountRepository {
     return { likes, ripples, reechoes, bookmarks };
   }
 
-  async getCountsForEchoes(echoIds: string[]): Promise<Map<string, EngagementCounts>> {
+  async getCountsForEchoes(
+    echoIds: string[],
+  ): Promise<Map<string, EngagementCounts>> {
     const countsMap = new Map<string, EngagementCounts>();
 
-    // Get all counts in parallel
+    //* Get all counts in parallel
     const [likes, ripples, reechoes, bookmarks] = await Promise.all([
       this.prisma.like.groupBy({
         by: ['echoId'],
@@ -42,10 +44,10 @@ export class EngagementCountRepository {
       this.prisma.ripple.groupBy({
         by: ['echoId'],
         _count: { id: true },
-        where: { 
+        where: {
           echoId: { in: echoIds },
           deleted: false,
-          parentId: null 
+          parentId: null,
         },
       }),
       this.prisma.reEcho.groupBy({
@@ -60,28 +62,28 @@ export class EngagementCountRepository {
       }),
     ]);
 
-    // Initialize map with zero counts
-    echoIds.forEach(id => {
+    //* Initialize map with zero counts
+    echoIds.forEach((id) => {
       countsMap.set(id, { likes: 0, ripples: 0, reechoes: 0, bookmarks: 0 });
     });
 
-    // Populate with actual counts
-    likes.forEach(item => {
+    //* Populate with actual counts
+    likes.forEach((item) => {
       const counts = countsMap.get(item.echoId);
       if (counts) counts.likes = item._count.id;
     });
 
-    ripples.forEach(item => {
+    ripples.forEach((item) => {
       const counts = countsMap.get(item.echoId);
       if (counts) counts.ripples = item._count.id;
     });
 
-    reechoes.forEach(item => {
+    reechoes.forEach((item) => {
       const counts = countsMap.get(item.echoId);
       if (counts) counts.reechoes = item._count.id;
     });
 
-    bookmarks.forEach(item => {
+    bookmarks.forEach((item) => {
       const counts = countsMap.get(item.echoId);
       if (counts) counts.bookmarks = item._count.id;
     });
@@ -96,7 +98,13 @@ export class EngagementCountRepository {
     bookmarksMade: number;
     echoesCreated: number;
   }> {
-    const [likesGiven, ripplesMade, reechoesMade, bookmarksMade, echoesCreated] = await Promise.all([
+    const [
+      likesGiven,
+      ripplesMade,
+      reechoesMade,
+      bookmarksMade,
+      echoesCreated,
+    ] = await Promise.all([
       this.prisma.like.count({ where: { userId } }),
       this.prisma.ripple.count({ where: { userId, deleted: false } }),
       this.prisma.reEcho.count({ where: { userId } }),

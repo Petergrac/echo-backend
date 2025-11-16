@@ -1,7 +1,11 @@
 // src/engagement/repositories/ripple.repository.ts
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { BaseRepository } from '../../common/base/repository.base';
-import { PrismaService } from '../../common/services/prisma.service';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
+import { BaseRepository } from '../../../common/base/repository.base';
+import { PrismaService } from '../../../common/services/prisma.service';
 
 export interface CreateRippleDto {
   content: string;
@@ -9,17 +13,19 @@ export interface CreateRippleDto {
   echoId: string;
   parentId?: string;
 }
-
 export interface RippleWithRelations {
   id: string;
   content: string;
   createdAt: Date;
   updatedAt: Date;
+  userId: string;
+  echoId: string;
+  parentId: string | null;
   deleted: boolean;
   user: {
     id: string;
     username: string;
-    avatar?: string | null;
+    avatar: string | null;
   };
   echo: {
     id: string;
@@ -44,9 +50,11 @@ export class RippleRepository extends BaseRepository {
     super(prisma);
   }
 
-  async createRipple(createRippleDto: CreateRippleDto): Promise<{ ripple: RippleWithRelations; notificationNeeded: boolean }> {
+  async createRipple(
+    createRippleDto: CreateRippleDto,
+  ): Promise<{ ripple: RippleWithRelations; notificationNeeded: boolean }> {
     return this.executeTransaction(async (prisma) => {
-      // Verify echo exists
+      //* Verify echo exists
       const echo = await prisma.echo.findUnique({
         where: { id: createRippleDto.echoId },
         select: { id: true, authorId: true, deleted: true },
@@ -56,7 +64,7 @@ export class RippleRepository extends BaseRepository {
         throw new NotFoundException('Echo not found');
       }
 
-      // Verify parent exists if provided
+      //* Verify parent exists if provided
       if (createRippleDto.parentId) {
         const parent = await prisma.ripple.findUnique({
           where: { id: createRippleDto.parentId },
@@ -67,13 +75,15 @@ export class RippleRepository extends BaseRepository {
           throw new NotFoundException('Parent ripple not found');
         }
 
-        // Ensure parent belongs to the same echo
+        //* Ensure parent belongs to the same echo
         if (parent.echoId !== createRippleDto.echoId) {
-          throw new ForbiddenException('Parent ripple does not belong to this echo');
+          throw new ForbiddenException(
+            'Parent ripple does not belong to this echo',
+          );
         }
       }
 
-      // Create the ripple
+      //* Create the ripple
       const ripple = await prisma.ripple.create({
         data: {
           content: createRippleDto.content,
@@ -84,25 +94,28 @@ export class RippleRepository extends BaseRepository {
         include: this.getRippleInclude(),
       });
 
-      // Determine notification logic
-      const notificationNeeded = await this.determineNotificationNeeded(ripple, echo);
+      //* Determine notification logic
+      const notificationNeeded = await this.determineNotificationNeeded(
+        ripple,
+        echo,
+      );
 
       return { ripple, notificationNeeded };
     });
   }
 
   async getRipplesByEchoId(
-    echoId: string, 
-    page: number = 1, 
+    echoId: string,
+    page: number = 1,
     limit: number = 20,
-    includeReplies: boolean = false
+    includeReplies: boolean = false,
   ): Promise<{ ripples: RippleWithRelations[]; total: number }> {
     const skip = (page - 1) * limit;
 
-    const whereClause: any = { 
-      echoId, 
+    const whereClause: any = {
+      echoId,
       parentId: includeReplies ? undefined : null,
-      deleted: false 
+      deleted: false,
     };
 
     const [ripples, total] = await Promise.all([
@@ -125,7 +138,11 @@ export class RippleRepository extends BaseRepository {
       include: this.getRippleInclude(true),
     });
   }
-  async updateRipple(rippleId: string, userId: string, content: string): Promise<RippleWithRelations> {
+  async updateRipple(
+    rippleId: string,
+    userId: string,
+    content: string,
+  ): Promise<RippleWithRelations> {
     return this.executeTransaction(async (prisma) => {
       const ripple = await prisma.ripple.findUnique({
         where: { id: rippleId },
@@ -139,13 +156,17 @@ export class RippleRepository extends BaseRepository {
         throw new ForbiddenException('You can only edit your own ripples');
       }
 
-      // Check edit window (15 minutes)
+      //* Check edit window (15 minutes)
       const editWindowMs = 15 * 60 * 1000;
       const now = new Date();
       const timeSinceCreation = now.getTime() - ripple.createdAt.getTime();
+      const timeSinceUpdate = now.getTime() - ripple.updatedAt.getTime();
 
-      if (timeSinceCreation > editWindowMs) {
-        throw new ForbiddenException('Ripple can only be edited within 15 minutes of creation');
+      //* If already updated, use the last update time to enforce edit window
+      if (timeSinceUpdate > editWindowMs || timeSinceCreation > editWindowMs) {
+        throw new ForbiddenException(
+          'Ripple can only be edited within 15 minutes of the last update',
+        );
       }
 
       return prisma.ripple.update({
@@ -156,7 +177,11 @@ export class RippleRepository extends BaseRepository {
     });
   }
 
-  async softDeleteRipple(rippleId: string, userId: string, userRole?: string): Promise<void> {
+  async softDeleteRipple(
+    rippleId: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<void> {
     await this.executeTransaction(async (prisma) => {
       const ripple = await prisma.ripple.findUnique({
         where: { id: rippleId },
@@ -172,7 +197,9 @@ export class RippleRepository extends BaseRepository {
       const isAdmin = userRole === 'admin';
 
       if (!isOwner && !isEchoOwner && !isAdmin) {
-        throw new ForbiddenException('You do not have permission to delete this ripple');
+        throw new ForbiddenException(
+          'You do not have permission to delete this ripple',
+        );
       }
 
       await prisma.ripple.update({
@@ -184,10 +211,10 @@ export class RippleRepository extends BaseRepository {
 
   async getRippleCount(echoId: string): Promise<number> {
     return this.prisma.ripple.count({
-      where: { 
-        echoId, 
+      where: {
+        echoId,
         deleted: false,
-        parentId: null // Only count top-level ripples
+        parentId: null, // Only count top-level ripples
       },
     });
   }
@@ -243,13 +270,16 @@ export class RippleRepository extends BaseRepository {
     };
   }
 
-  private async determineNotificationNeeded(ripple: any, echo: any): Promise<boolean> {
-    // Notify echo author if it's not their ripple
+  private async determineNotificationNeeded(
+    ripple: any,
+    echo: any,
+  ): Promise<boolean> {
+    //* Notify echo author if it's not their ripple
     if (ripple.userId !== echo.authorId) {
       return true;
     }
 
-    // Notify parent author if it's a reply and not to themselves
+    //* Notify parent author if it's a reply and not to themselves
     if (ripple.parentId) {
       const parent = await this.prisma.ripple.findUnique({
         where: { id: ripple.parentId },
