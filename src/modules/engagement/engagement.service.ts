@@ -29,8 +29,7 @@ import {
   UserEngagementStateDto,
   RippleResponseDto,
 } from './dto/engagement-response.dto';
-import { NotificationService } from '../notifications/notifications.service';
-
+import { NotificationService } from '../notification/notifications.service';
 
 @Injectable()
 export class EngagementService {
@@ -42,8 +41,12 @@ export class EngagementService {
     private readonly engagementCountRepository: EngagementCountRepository,
     private readonly notificationService: NotificationService,
   ) {}
-
-  //todo ==================== LIKE OPERATIONS ====================
+  /**
+   * TODO ==================== LIKE OPERATIONS ====================
+   * @param userId
+   * @param createLikeDto
+   * @returns
+   */
   async likeEcho(
     userId: string,
     createLikeDto: CreateLikeDto,
@@ -56,19 +59,24 @@ export class EngagementService {
     const { like, notificationNeeded } =
       await this.likeRepository.like(likeData);
 
-    // Create notification if needed
+    //* 1.Create notification if needed
     if (notificationNeeded) {
       await this.notificationService.createNotification({
         type: 'LIKE',
         fromUserId: userId,
-        targetUserId: like.echo.authorId, // We'll need to fetch this
+        targetUserId: like.echo.authorId,
         echoId: createLikeDto.echoId,
       });
     }
 
     return { success: true };
   }
-
+  /**
+   * TODO ==================== UNLIKE AN ECHO OPERATION ====================
+   * @param userId
+   * @param echoId
+   * @returns
+   */
   async unlikeEcho(
     userId: string,
     echoId: string,
@@ -76,7 +84,13 @@ export class EngagementService {
     await this.likeRepository.unlike(userId, echoId);
     return { success: true };
   }
-
+  /**
+   *  TODO ==================== GET LIKES OF A SPECIFIC ECHO ====================
+   * @param echoId
+   * @param page
+   * @param limit
+   * @returns
+   */
   async getEchoLikes(echoId: string, page: number = 1, limit: number = 20) {
     return this.likeRepository.getLikesByEchoId(echoId, page, limit);
   }
@@ -85,7 +99,7 @@ export class EngagementService {
     return this.likeRepository.getUserLikes(userId, page, limit);
   }
 
-  // TODO==================== RIPPLE (COMMENT) OPERATIONS ====================
+  // TODO==================== RIPPLE (REPLY) OPERATIONS ====================
   async createRipple(
     userId: string,
     createRippleDto: CreateRippleDto,
@@ -100,14 +114,21 @@ export class EngagementService {
     const { ripple, notificationNeeded } =
       await this.rippleRepository.createRipple(rippleData);
 
-    //* Handle notifications
+    //* 1.Handle notifications
     if (notificationNeeded) {
       await this.handleRippleNotifications(ripple, userId);
     }
 
     return this.transformRippleToResponse(ripple);
   }
-
+  /**
+   *  TODO ==================== GET RIPPLES OF A GIVEN ECHO ====================
+   * @param echoId
+   * @param page
+   * @param limit
+   * @param includeReplies
+   * @returns
+   */
   async getEchoRipples(
     echoId: string,
     page: number = 1,
@@ -141,6 +162,13 @@ export class EngagementService {
     return ripple ? this.transformRippleToResponse(ripple) : null;
   }
 
+  /**
+   *   TODO ==================== UPDATE A RIPPLE ====================
+   * @param rippleId
+   * @param userId
+   * @param content
+   * @returns
+   */
   async updateRipple(
     rippleId: string,
     userId: string,
@@ -153,7 +181,13 @@ export class EngagementService {
     );
     return this.transformRippleToResponse(updatedRipple);
   }
-
+  /**
+   *  TODO ==================== DELETE A RIPPLE ====================
+   * @param rippleId
+   * @param userId
+   * @param userRole
+   * @returns
+   */
   async deleteRipple(
     rippleId: string,
     userId: string,
@@ -163,7 +197,7 @@ export class EngagementService {
     return { success: true };
   }
 
-  // TODO==================== REECHO OPERATIONS ====================
+  // TODO==================== REECHO AN ECHO ====================
   async reechoEcho(
     userId: string,
     createReEchoDto: CreateReEchoDto,
@@ -187,7 +221,12 @@ export class EngagementService {
 
     return { success: true };
   }
-
+  /**
+   *  TODO ==================== UN TWEET (UN RE-ECHO) AN ECHO ====================
+   * @param userId
+   * @param echoId
+   * @returns
+   */
   async unreechoEcho(
     userId: string,
     echoId: string,
@@ -291,6 +330,17 @@ export class EngagementService {
 
   async getUserEngagementStats(userId: string) {
     return this.engagementCountRepository.getUserEngagementStats(userId);
+  }
+
+  /**
+   * TODO ====================== GET ENGAGEMENT COUNTS FOR MULTIPLE ECHOES ======================
+   * @param echoIds
+   * @returns //? Map of echo IDs to their respective engagement counts
+   */
+  async getBatchEngagementCounts(
+    echoIds: string[],
+  ): Promise<Map<string, EngagementCountsDto>> {
+    return this.engagementCountRepository.getCountsForEchoes(echoIds);
   }
 
   // TODO ==================== PRIVATE METHODS ====================

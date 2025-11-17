@@ -15,6 +15,7 @@ import { UploadApiResponse } from 'cloudinary';
 import { UpdateEchoDto } from './dto/update-echo.dto';
 import { EchoResponseDto } from './dto/echo-response.dto';
 import { PaginatedResponseDto, PaginationMetaDto } from './dto/pagination.dto';
+import { HashtagService } from '../hashtag/hashtag.service';
 
 @Injectable()
 export class EchoService {
@@ -22,6 +23,7 @@ export class EchoService {
     private readonly cloudinary: CloudinaryService,
     private readonly repo: EchoRepository,
     private readonly audit: AuditService,
+    private readonly hashtagService: HashtagService,
   ) {}
   /**
    * TODO ============================ CREATE ECHO ============================
@@ -50,6 +52,16 @@ export class EchoService {
     }
     //* 3. Create Echo record in DB
     const echo = await this.repo.createEcho(userId, dto, mediaData);
+
+    if (dto.content) {
+      //* 4.Process hashtags in background (don't await for performance)
+      this.hashtagService
+        .processHashtagsForEcho(echo.id, dto.content)
+        .catch((error) => {
+          console.error('Failed to process hashtags:', error);
+          //* 5. Don't fail the echo creation if hashtag processing fails
+        });
+    }
 
     //* 4. Audit the action
     await this.audit.log(userId, 'ECHO_CREATED', {

@@ -12,6 +12,11 @@ export interface EngagementCounts {
 export class EngagementCountRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * TODO ====================== GET COUNTS FOR ECHO ======================
+   * @param echoId  the echo id to get counts for
+   * @returns //? Counts of likes, ripples, reechoes, and bookmarks for a specific echo
+   */
   async getCountsForEcho(echoId: string): Promise<EngagementCounts> {
     const [likes, ripples, reechoes, bookmarks] = await Promise.all([
       this.prisma.like.count({ where: { echoId } }),
@@ -28,13 +33,17 @@ export class EngagementCountRepository {
 
     return { likes, ripples, reechoes, bookmarks };
   }
-
+ /**
+  *  TODO ====================== GET COUNTS FOR MULTIPLE ECHOES ======================
+  * @param echoIds 
+  * @returns //? Map of echo IDs to their respective engagement counts
+  */
   async getCountsForEchoes(
     echoIds: string[],
   ): Promise<Map<string, EngagementCounts>> {
     const countsMap = new Map<string, EngagementCounts>();
 
-    //* Get all counts in parallel
+    //* 1.Get all counts in parallel
     const [likes, ripples, reechoes, bookmarks] = await Promise.all([
       this.prisma.like.groupBy({
         by: ['echoId'],
@@ -62,12 +71,12 @@ export class EngagementCountRepository {
       }),
     ]);
 
-    //* Initialize map with zero counts
+    //* 2.Initialize map with zero counts
     echoIds.forEach((id) => {
       countsMap.set(id, { likes: 0, ripples: 0, reechoes: 0, bookmarks: 0 });
     });
 
-    //* Populate with actual counts
+    //* 3.Populate with actual counts
     likes.forEach((item) => {
       const counts = countsMap.get(item.echoId);
       if (counts) counts.likes = item._count.id;
@@ -90,7 +99,11 @@ export class EngagementCountRepository {
 
     return countsMap;
   }
-
+  /**
+   *  TODO ====================== GET USER ENGAGEMENT STATISTICS ======================
+   * @param userId 
+   * @returns // ? Statistics of a user's engagement activities
+   */
   async getUserEngagementStats(userId: string): Promise<{
     likesGiven: number;
     ripplesMade: number;

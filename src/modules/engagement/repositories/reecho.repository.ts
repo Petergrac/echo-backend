@@ -17,12 +17,16 @@ export class ReEchoRepository extends BaseRepository {
   constructor(prisma: PrismaService) {
     super(prisma);
   }
-
+ /**
+  *  TODO ====================== REECHO AN ECHO ======================
+  * @param createReEchoDto 
+  * @returns 
+  */
   async reecho(
     createReEchoDto: CreateReEchoDto,
   ): Promise<{ reecho: any; notificationNeeded: boolean }> {
     return this.executeTransaction(async (prisma) => {
-      //* Check if reecho already exists
+      //* 1.Check if reecho already exists
       const existingReEcho = await prisma.reEcho.findUnique({
         where: {
           userId_echoId: {
@@ -36,7 +40,7 @@ export class ReEchoRepository extends BaseRepository {
         throw new ConflictException('You have already reechoed this echo');
       }
 
-      //* Get echo to check ownership for notification
+      //* 2.Get echo to check ownership for notification
       const echo = await prisma.echo.findUnique({
         where: { id: createReEchoDto.echoId },
         select: { authorId: true },
@@ -46,7 +50,7 @@ export class ReEchoRepository extends BaseRepository {
         throw new NotFoundException('Echo not found');
       }
 
-      //* Create the reecho
+      //* 3.Create the reecho
       const reecho = await prisma.reEcho.create({
         data: createReEchoDto,
         include: {
@@ -68,13 +72,17 @@ export class ReEchoRepository extends BaseRepository {
         },
       });
 
-      //TODO Determine if notification is needed (not reechoing your own echo)
+      //TODO => Determine if notification is needed (not reechoing your own echo)
       const notificationNeeded = echo.authorId !== createReEchoDto.userId;
 
       return { reecho, notificationNeeded };
     });
   }
-
+  /**
+   * TODO ====================== UNRE ECHO AN ECHO ======================
+   * @param userId 
+   * @param echoId 
+   */
   async unreecho(userId: string, echoId: string): Promise<void> {
     await this.executeTransaction(async (prisma) => {
       const reecho = await prisma.reEcho.findUnique({
@@ -100,7 +108,13 @@ export class ReEchoRepository extends BaseRepository {
       });
     });
   }
-
+  /**
+   * TODO ====================== GET ALL REECHOES FOR A SPECIFIC ECHO ======================
+   * @param echoId 
+   * @param page 
+   * @param limit 
+   * @returns 
+   */
   async getReEchoesByEchoId(
     echoId: string,
     page: number = 1,
@@ -129,7 +143,13 @@ export class ReEchoRepository extends BaseRepository {
 
     return { reechoes, total };
   }
-
+  /**
+   * TODO ====================== GET ALL REECHOES FOR A SPECIFIC USER ===================
+   * @param userId 
+   * @param page 
+   * @param limit 
+   * @returns 
+   */
   async getUserReEchoes(
     userId: string,
     page: number = 1,
@@ -170,7 +190,12 @@ export class ReEchoRepository extends BaseRepository {
 
     return { reechoes, total };
   }
-
+ /**
+  * TODO ====================== CHECK IF USER REECHOED A SPECIFIC ECHO ======================
+  * @param userId 
+  * @param echoId 
+  * @returns 
+  */
   async isReEchoed(userId: string, echoId: string): Promise<boolean> {
     const reecho = await this.prisma.reEcho.findUnique({
       where: {
@@ -184,6 +209,11 @@ export class ReEchoRepository extends BaseRepository {
     return !!reecho;
   }
 
+  /**
+   * TODO ====================== GET ALL REECHO COUNTS ======================
+   * @param echoId 
+   * @returns 
+   */
   async getReEchoCount(echoId: string): Promise<number> {
     return this.prisma.reEcho.count({
       where: { echoId },

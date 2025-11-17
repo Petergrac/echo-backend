@@ -1,4 +1,3 @@
-// src/engagement/repositories/bookmark.repository.ts
 import {
   Injectable,
   ConflictException,
@@ -17,10 +16,10 @@ export class BookmarkRepository extends BaseRepository {
   constructor(prisma: PrismaService) {
     super(prisma);
   }
-// TODO ==================== BOOKMARK OPERATIONS ====================
+  // TODO ==================== BOOKMARK OPERATIONS ====================
   async bookmark(createBookmarkDto: CreateBookmarkDto): Promise<any> {
     return this.executeTransaction(async (prisma) => {
-      //* Check if bookmark already exists
+      //* 1. Check if bookmark already exists using composite keys
       const existingBookmark = await prisma.bookmark.findUnique({
         where: {
           userId_echoId: {
@@ -34,7 +33,7 @@ export class BookmarkRepository extends BaseRepository {
         throw new ConflictException('You have already bookmarked this echo');
       }
 
-      //* Verify echo exists
+      //* 2. Verify echo exists
       const echo = await prisma.echo.findUnique({
         where: { id: createBookmarkDto.echoId },
         select: { id: true },
@@ -44,7 +43,7 @@ export class BookmarkRepository extends BaseRepository {
         throw new NotFoundException('Echo not found');
       }
 
-      //* Create the bookmark
+      //* 3.Create the bookmark
       return prisma.bookmark.create({
         data: createBookmarkDto,
         include: {
@@ -55,7 +54,6 @@ export class BookmarkRepository extends BaseRepository {
                 select: {
                   id: true,
                   username: true,
-                  displayName: true,
                   avatar: true,
                 },
               },
@@ -72,8 +70,9 @@ export class BookmarkRepository extends BaseRepository {
       });
     });
   }
-// TODO ==================== UN-BOOKMARK OPERATIONS ====================
+  // TODO ==================== UN-BOOKMARK OPERATIONS ====================
   async unbookmark(userId: string, echoId: string): Promise<void> {
+    //* 1. First check if the bookmark is available
     await this.executeTransaction(async (prisma) => {
       const bookmark = await prisma.bookmark.findUnique({
         where: {
@@ -87,7 +86,7 @@ export class BookmarkRepository extends BaseRepository {
       if (!bookmark) {
         throw new NotFoundException('Bookmark not found');
       }
-
+      //* 2. Delete the bookmark
       await prisma.bookmark.delete({
         where: {
           userId_echoId: {
@@ -98,15 +97,15 @@ export class BookmarkRepository extends BaseRepository {
       });
     });
   }
-// TODO ==================== GET USER BOOKMARKS ====================
+  // TODO ==================== GET USER BOOKMARKS ====================
   async getUserBookmarks(
     userId: string,
     page: number = 1,
     limit: number = 20,
   ): Promise<{ bookmarks: any[]; total: number }> {
     const skip = (page - 1) * limit;
-
     const [bookmarks, total] = await Promise.all([
+      //* Get all users bookmarks
       this.prisma.bookmark.findMany({
         where: { userId },
         include: {
@@ -139,7 +138,7 @@ export class BookmarkRepository extends BaseRepository {
 
     return { bookmarks, total };
   }
-// TODO ==================== CHECK IF BOOKMARKED ====================
+  // TODO ==================== CHECK IF BOOKMARKED ====================
   async isBookmarked(userId: string, echoId: string): Promise<boolean> {
     const bookmark = await this.prisma.bookmark.findUnique({
       where: {
@@ -152,20 +151,23 @@ export class BookmarkRepository extends BaseRepository {
 
     return !!bookmark;
   }
-// TODO ==================== GET BOOKMARK COUNT ====================
+  // TODO ==================== GET BOOKMARK COUNT ====================
   async getBookmarkCount(echoId: string): Promise<number> {
     return this.prisma.bookmark.count({
       where: { echoId },
     });
   }
-
-  async getUserBookmarksBatch(userId: string, echoIds: string[]): Promise<{ echoId: string }[]> {
-  return this.prisma.bookmark.findMany({
-    where: {
-      userId,
-      echoId: { in: echoIds },
-    },
-    select: { echoId: true },
-  });
-}
+  //TODO =================== GET ALL USERS BOOKMARKS IN BATCH ===============
+  async getUserBookmarksBatch(
+    userId: string,
+    echoIds: string[],
+  ): Promise<{ echoId: string }[]> {
+    return this.prisma.bookmark.findMany({
+      where: {
+        userId,
+        echoId: { in: echoIds },
+      },
+      select: { echoId: true },
+    });
+  }
 }

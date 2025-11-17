@@ -8,6 +8,8 @@ import { RippleModule } from './modules/ripple/ripple.module';
 import { HealthController } from './common/controllers/healthcare.controller';
 import { CustomArcjetGuard } from './common/guards/arcjet.guard';
 import { CommonModule } from './common/module/common.module';
+import { FeedModule } from './modules/feed/feed.module';
+import { HashtagModule } from './modules/hashtag/hashtag.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { CommonModule } from './common/module/common.module';
     UsersModule,
     EchoModule,
     RippleModule,
+    FeedModule,
+    HashtagModule,
   ],
   controllers: [HealthController],
   providers: [

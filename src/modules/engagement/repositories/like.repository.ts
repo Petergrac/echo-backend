@@ -27,12 +27,16 @@ export class LikeRepository extends BaseRepository {
   constructor(prisma: PrismaService) {
     super(prisma);
   }
-
+  /**
+   *  TODO ====================== LIKE AN ECHO ======================
+   * @param createLikeDto 
+   * @returns //? Like object and boolean indicating if notification is needed
+   */
   async like(
     createLikeDto: CreateLikeDto,
   ): Promise<{ like: any; notificationNeeded: boolean }> {
     return this.executeTransaction(async (prisma) => {
-      //* Check if like already exists
+      //* 1.Check if like already exists
       const existingLike = await prisma.like.findUnique({
         where: {
           userId_echoId: {
@@ -46,7 +50,7 @@ export class LikeRepository extends BaseRepository {
         throw new ConflictException('You have already liked this echo');
       }
 
-      //* Get echo to check ownership for notification
+      //* 2.Get echo to check ownership for notification
       const echo = await prisma.echo.findUnique({
         where: { id: createLikeDto.echoId },
         select: { authorId: true },
@@ -56,15 +60,17 @@ export class LikeRepository extends BaseRepository {
         throw new NotFoundException('Echo not found');
       }
 
-      //* Create the like
+      //* 3.Create the like
       const like = await prisma.like.create({
-        data: createLikeDto,
+        data: {
+          ...createLikeDto,
+          targetType: 'ECHO',
+        },
         include: {
           user: {
             select: {
               id: true,
               username: true,
-              displayName: true,
               avatar: true,
             },
           },
@@ -73,11 +79,14 @@ export class LikeRepository extends BaseRepository {
 
       //? Determine if notification is needed (not liking your own echo)
       const notificationNeeded = echo.authorId !== createLikeDto.userId;
-
       return { like, notificationNeeded };
     });
   }
-
+  /**
+   *  TODO ====================== UNLIKE AN ECHO ======================
+   * @param userId 
+   * @param echoId 
+   */
   async unlike(userId: string, echoId: string): Promise<void> {
     await this.executeTransaction(async (prisma) => {
       const like = await prisma.like.findUnique({
@@ -103,7 +112,13 @@ export class LikeRepository extends BaseRepository {
       });
     });
   }
-
+ /**
+  *   TODO ====================== GET LIKE COUNTS FOR A SPECIFIC ECHO ======================
+  * @param echoId 
+  * @param page 
+  * @param limit 
+  * @returns 
+  */
   async getLikesByEchoId(
     echoId: string,
     page: number = 1,
@@ -132,7 +147,13 @@ export class LikeRepository extends BaseRepository {
 
     return { likes, total };
   }
-
+  /**
+   *  TODO ====================== GET LIKES AND THE PEOPLE BEHIND THEM ======================
+   * @param userId 
+   * @param page 
+   * @param limit 
+   * @returns 
+   */
   async getUserLikes(
     userId: string,
     page: number = 1,
@@ -173,7 +194,12 @@ export class LikeRepository extends BaseRepository {
 
     return { likes, total };
   }
-
+ /**
+  *  TODO ====================== CHECK IF USER LIKED A SPECIFIC ECHO ======================
+  * @param userId 
+  * @param echoId 
+  * @returns 
+  */
   async isLiked(userId: string, echoId: string): Promise<boolean> {
     const like = await this.prisma.like.findUnique({
       where: {
@@ -186,13 +212,22 @@ export class LikeRepository extends BaseRepository {
 
     return !!like;
   }
-
+ /**
+  *  TODO ====================== GET ALL LIKE COUNTS ======================
+  * @param echoId 
+  * @returns 
+  */
   async getLikeCount(echoId: string): Promise<number> {
     return this.prisma.like.count({
       where: { echoId },
     });
   }
-
+  /**
+   *  TODO ====================== GET USER'S LIKES IN BATCH ======================
+   * @param userId 
+   * @param echoIds 
+   * @returns 
+   */
   async getUserLikesBatch(userId: string, echoIds: string[]): Promise<{ echoId: string }[]> {
   return this.prisma.like.findMany({
     where: {

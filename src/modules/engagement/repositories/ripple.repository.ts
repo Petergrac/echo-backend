@@ -1,4 +1,3 @@
-// src/engagement/repositories/ripple.repository.ts
 import {
   Injectable,
   NotFoundException,
@@ -49,12 +48,16 @@ export class RippleRepository extends BaseRepository {
   constructor(prisma: PrismaService) {
     super(prisma);
   }
-
+  /**
+   * TODO ====================== CREATE RIPPLE ======================
+   * @param createRippleDto 
+   * @returns 
+   */
   async createRipple(
     createRippleDto: CreateRippleDto,
   ): Promise<{ ripple: RippleWithRelations; notificationNeeded: boolean }> {
     return this.executeTransaction(async (prisma) => {
-      //* Verify echo exists
+      //* 1.Verify echo exists
       const echo = await prisma.echo.findUnique({
         where: { id: createRippleDto.echoId },
         select: { id: true, authorId: true, deleted: true },
@@ -64,7 +67,7 @@ export class RippleRepository extends BaseRepository {
         throw new NotFoundException('Echo not found');
       }
 
-      //* Verify parent exists if provided
+      //* 2.Verify parent exists if provided
       if (createRippleDto.parentId) {
         const parent = await prisma.ripple.findUnique({
           where: { id: createRippleDto.parentId },
@@ -75,7 +78,7 @@ export class RippleRepository extends BaseRepository {
           throw new NotFoundException('Parent ripple not found');
         }
 
-        //* Ensure parent belongs to the same echo
+        //* 3.Ensure parent belongs to the same echo
         if (parent.echoId !== createRippleDto.echoId) {
           throw new ForbiddenException(
             'Parent ripple does not belong to this echo',
@@ -83,7 +86,7 @@ export class RippleRepository extends BaseRepository {
         }
       }
 
-      //* Create the ripple
+      //* 4.Create the ripple
       const ripple = await prisma.ripple.create({
         data: {
           content: createRippleDto.content,
@@ -94,7 +97,7 @@ export class RippleRepository extends BaseRepository {
         include: this.getRippleInclude(),
       });
 
-      //* Determine notification logic
+      //* 5.Determine notification logic
       const notificationNeeded = await this.determineNotificationNeeded(
         ripple,
         echo,
@@ -103,7 +106,14 @@ export class RippleRepository extends BaseRepository {
       return { ripple, notificationNeeded };
     });
   }
-
+  /**
+   *  TODO ====================== GET ALL RIPPLES OF A GIVEN ECHO ======================
+   * @param echoId 
+   * @param page 
+   * @param limit 
+   * @param includeReplies 
+   * @returns 
+   */
   async getRipplesByEchoId(
     echoId: string,
     page: number = 1,
@@ -138,6 +148,13 @@ export class RippleRepository extends BaseRepository {
       include: this.getRippleInclude(true),
     });
   }
+  /**
+   *  TODO ====================== EDIT A RIPPLE ======================
+   * @param rippleId 
+   * @param userId 
+   * @param content 
+   * @returns 
+   */
   async updateRipple(
     rippleId: string,
     userId: string,
@@ -156,13 +173,13 @@ export class RippleRepository extends BaseRepository {
         throw new ForbiddenException('You can only edit your own ripples');
       }
 
-      //* Check edit window (15 minutes)
+      //* 1.Check edit window (15 minutes)
       const editWindowMs = 15 * 60 * 1000;
       const now = new Date();
       const timeSinceCreation = now.getTime() - ripple.createdAt.getTime();
       const timeSinceUpdate = now.getTime() - ripple.updatedAt.getTime();
 
-      //* If already updated, use the last update time to enforce edit window
+      //* 2. If already updated, use the last update time to enforce edit window
       if (timeSinceUpdate > editWindowMs || timeSinceCreation > editWindowMs) {
         throw new ForbiddenException(
           'Ripple can only be edited within 15 minutes of the last update',
@@ -176,7 +193,7 @@ export class RippleRepository extends BaseRepository {
       });
     });
   }
-
+  // TODO ====================== SOFT DELETE THE RIPPLE ======================
   async softDeleteRipple(
     rippleId: string,
     userId: string,
@@ -208,7 +225,7 @@ export class RippleRepository extends BaseRepository {
       });
     });
   }
-
+// TODO ====================== GET RIPPLE COUNT FOR A SPECIFIC ECHO (Top level ripples only) ======================
   async getRippleCount(echoId: string): Promise<number> {
     return this.prisma.ripple.count({
       where: {
@@ -274,12 +291,12 @@ export class RippleRepository extends BaseRepository {
     ripple: any,
     echo: any,
   ): Promise<boolean> {
-    //* Notify echo author if it's not their ripple
+    //* 1.Notify echo author if it's not their ripple
     if (ripple.userId !== echo.authorId) {
       return true;
     }
 
-    //* Notify parent author if it's a reply and not to themselves
+    //* 2.Notify parent author if it's a reply and not to themselves
     if (ripple.parentId) {
       const parent = await this.prisma.ripple.findUnique({
         where: { id: ripple.parentId },

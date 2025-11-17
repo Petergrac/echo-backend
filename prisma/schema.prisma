@@ -30,7 +30,7 @@ enum NotificationType {
   ACHIEVEMENT     // When you earn an achievement
   RIPPLE         // New comment on your echo
   RIPPLE_REPLY   // Reply to your comment
-  REECHO
+  REECHO // When someone re-echoes your post
 }
 
 enum AuditAction {
@@ -85,6 +85,8 @@ model User {
   email         String         @unique
   emailVerified Boolean        @default(false)
   username      String         @unique
+  firstName     String
+  lastName      String
   passwordHash  String
   bio           String?
   avatar        String? 
@@ -180,20 +182,20 @@ model Echo {
   reechoes  ReEcho[]
   bookmarks Bookmark[]
   echoHashtags EchoHashtag[]
-
-  // Enhanced indexes for engagement queries
+  notifications Notification[]
+  
+  //TODO=> Enhanced indexes for engagement queries
   @@index([authorId, createdAt])
   @@index([createdAt])
   @@index([deleted])
-  @@index([authorId, deleted, createdAt])
-  notifications Notification[]
+  @@index([authorId, deleted, createdAt]) 
 }
 // TODO ========================== New Media model (one or many per echo)
 model Media {
   id        String   @id @default(cuid())
   echoId    String
   url       String
-  publicId  String?   // cloudinary public id
+  publicId  String?   //? cloudinary public id
   mimetype  String
   sensitivity Boolean  @default(false)
   resourceType String?
@@ -201,19 +203,26 @@ model Media {
 
   echo Echo @relation(fields: [echoId], references: [id], onDelete: Cascade)
 }
+//? Like type of the engagement
+enum TargetType {
+  ECHO 
+  RIPPLE
+}
 
 //TODO ==================== ENGAGEMENT MODELS ====================
-//*
 model Like {
   id        String   @id @default(cuid())
   userId    String
   echoId    String
+  rippleId  String?
+  targetType TargetType @default(ECHO) 
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   echo Echo @relation(fields: [echoId], references: [id], onDelete: Cascade)
-
+  ripple Ripple? @relation(fields: [rippleId], references: [id], onDelete: Cascade)
   @@unique([userId, echoId])
+  @@unique([userId, rippleId])
   @@index([echoId, createdAt])
   @@index([userId, createdAt])
 }
@@ -232,11 +241,12 @@ model Ripple {
   echo   Echo   @relation(fields: [echoId], references: [id], onDelete: Cascade)
   parent Ripple? @relation("RippleReplies", fields: [parentId], references: [id])
   replies Ripple[] @relation("RippleReplies")
+  likes   Like[]
+  notifications Notification[]
 
   @@index([echoId, createdAt])
   @@index([userId, createdAt])
   @@index([parentId])
-  notifications Notification[]
 }
 
 model ReEcho {
@@ -279,7 +289,7 @@ model Hashtag {
   @@index([name])
   @@index([createdAt])
 }
-
+//* Join table for many-to-many relationship between Echo and Hashtag
 model EchoHashtag {
   id        String   @id @default(cuid())
   echoId    String
@@ -295,11 +305,11 @@ model EchoHashtag {
 
 model Notification {
   id        String   @id @default(cuid())
-  userId    String   // user receiving the notification
-  fromId    String   // user who triggered the notification
+  userId    String   //? user receiving the notification
+  fromId    String   //? user who triggered the notification
   type      NotificationType
-  echoId    String?  // link to the echo that triggered notification
-  rippleId  String?  // for comment replies
+  echoId    String?  //? link to the echo that triggered notification
+  rippleId  String?  //? for comment replies
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 

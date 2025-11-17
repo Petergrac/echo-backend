@@ -9,7 +9,7 @@ import {
   ToggleFollowResponse,
 } from '../../../common/types/follow.types';
 import { FollowRepository } from '../repository/follow.repository';
-import { NotificationService } from '../../notifications/notifications.service';
+import { NotificationService } from '../../notification/notifications.service';
 import { NotificationType } from '../../../generated/prisma/enums';
 
 interface dataType {
