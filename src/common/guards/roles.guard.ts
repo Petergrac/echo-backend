@@ -18,12 +18,12 @@ export class RoleGuard implements CanActivate {
     );
     if (!requiredRoles) return true;
     const { user } = ctx.switchToHttp().getRequest();
-
     //!Return false if there is no role
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (!user || !user.role)
       throw new ForbiddenException('Insufficient permissions');
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+    console.log(requiredRoles);
     return requiredRoles.includes(user.role);
   }
 }

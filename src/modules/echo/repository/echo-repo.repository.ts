@@ -6,10 +6,8 @@ import { UpdateEchoDto } from '../dto/update-echo.dto';
 export interface MediaDataType {
   url: string;
   mimetype: string;
-  sensitivity: boolean;
   publicId: string;
   resourceType?: string;
-  size: number;
 }
 
 @Injectable()
@@ -29,12 +27,12 @@ export class EchoRepository {
     mediaData?: MediaDataType[],
   ) {
     try {
-      return await this.prisma.echo.create({
+      const result =  await this.prisma.echo.create({
         data: {
           content: dto.content?.trim(),
           authorId: userId,
           media: {
-            create: mediaData,
+            create: mediaData ,
           },
         },
         include: {
@@ -48,7 +46,9 @@ export class EchoRepository {
           },
         },
       });
+      return result;
     } catch (error) {
+      console.log(error);
       throw new InternalServerErrorException('Failed to create Echo');
     }
   }

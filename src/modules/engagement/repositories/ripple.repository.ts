@@ -242,7 +242,6 @@ export class RippleRepository extends BaseRepository {
         select: {
           id: true,
           username: true,
-          displayName: true,
           avatar: true,
         },
       },
@@ -270,7 +269,6 @@ export class RippleRepository extends BaseRepository {
               select: {
                 id: true,
                 username: true,
-                displayName: true,
                 avatar: true,
               },
             },

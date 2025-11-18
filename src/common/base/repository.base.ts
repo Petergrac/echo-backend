@@ -5,7 +5,7 @@ export abstract class BaseRepository {
 
   protected async executeTransaction<T>(
     operations: (prisma: any) => Promise<T>,
-    maxRetries = 3
+    maxRetries = 5
   ): Promise<T> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -14,6 +14,7 @@ export abstract class BaseRepository {
           timeout: 10000,
         });
       } catch (error) {
+        console.log(error);
         if (attempt === maxRetries) throw error;
         await new Promise(resolve => 
           setTimeout(resolve, Math.pow(2, attempt) * 100)

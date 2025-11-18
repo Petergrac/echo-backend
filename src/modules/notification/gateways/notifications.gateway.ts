@@ -1,4 +1,3 @@
-// src/notification/gateways/notifications.gateway.ts
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -27,7 +26,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   server: Server;
 
   private readonly logger = new Logger(NotificationsGateway.name);
-  private readonly userSockets = new Map<string, string>(); // userId -> socketId
+  private readonly userSockets = new Map<string, string>(); //* userId -> socketId
 
   constructor(private readonly jwtService: JwtService) {}
 
@@ -39,22 +38,23 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     */
   async handleConnection(client: AuthenticatedSocket, ...args: any[]) {
     try {
+      //* 1.Authenticate user
       const token = this.extractToken(client);
       if (!token) {
         client.disconnect();
         return;
       }
-
+      //* 2.Verify JWT token  
       const payload = this.jwtService.verify(token);
       client.user = { userId: payload.userId, username: payload.username };
 
-      // Register user socket
+      //* 3.Register user socket
       this.userSockets.set(client.user.userId, client.id);
       
       this.logger.log(`User ${client.user.username} connected with socket ${client.id}`);
       this.logger.log(`Total connected users: ${this.userSockets.size}`);
 
-      // Send connection confirmation
+      //* 4.Send connection confirmation
       client.emit('connected', { 
         message: 'Successfully connected to notifications',
         userId: client.user.userId 
@@ -131,10 +131,10 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   @UseGuards(WsJwtGuard)
   @SubscribeMessage('mark_notification_read')
   async handleMarkAsRead(client: AuthenticatedSocket, payload: { notificationId: string }) {
-    // This would typically call a service to update the database
+    //* 1.This would typically call a service to update the database
     this.logger.log(`User ${client.user.userId} marked notification ${payload.notificationId} as read`);
     
-    // Acknowledge the action
+    //* 2.Acknowledge the action
     client.emit('notification_marked_read', { 
       notificationId: payload.notificationId,
       success: true 
@@ -150,7 +150,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   @UseGuards(WsJwtGuard)
   @SubscribeMessage('get_connected_users')
   async handleGetConnectedUsers(client: AuthenticatedSocket, payload: any) {
-    // Only allow admins in production
+    //* 1.Only allow admins in production
     client.emit('connected_users_count', {
       count: this.userSockets.size,
       timestamp: new Date().toISOString(),

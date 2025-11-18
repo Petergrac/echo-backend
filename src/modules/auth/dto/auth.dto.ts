@@ -14,6 +14,13 @@ export class SignUpDto {
   @IsNotEmpty({ message: 'Username is required.' })
   username: string;
 
+  @IsNotEmpty({ message: 'First name is required.' })
+  firstName: string;
+
+  @IsNotEmpty({ message: 'Last name is required.' })
+  lastName: string;
+
+
   @MinLength(8, { message: 'Password must be at least 8 characters long.' })
   password: string;
 

@@ -58,7 +58,6 @@ export class ReEchoRepository extends BaseRepository {
             select: {
               id: true,
               username: true,
-              displayName: true,
               avatar: true,
             },
           },

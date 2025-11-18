@@ -48,12 +48,12 @@ export class EchoService {
 
     //* 2. If we have files, upload them to Cloudinary
     if (files && files.length) {
-      mediaData = await this.uploadMediaFiles(files, dto.sensitivity);
+      mediaData = await this.uploadMediaFiles(files);
     }
     //* 3. Create Echo record in DB
     const echo = await this.repo.createEcho(userId, dto, mediaData);
 
-    if (dto.content) {
+    if (dto.content && echo) {
       //* 4.Process hashtags in background (don't await for performance)
       this.hashtagService
         .processHashtagsForEcho(echo.id, dto.content)
@@ -63,13 +63,15 @@ export class EchoService {
         });
     }
 
-    //* 4. Audit the action
-    await this.audit.log(userId, 'ECHO_CREATED', {
-      ip,
-      userAgent,
-      metadata: { echoId: echo.id },
-    });
-    return EchoResponseDto.fromEntity(echo);
+    if (echo) {
+      //* 4. Audit the action
+      await this.audit.log(userId, 'ECHO_CREATED', {
+        ip,
+        userAgent,
+        metadata: { echoId: echo.id },
+      });
+      return EchoResponseDto.fromEntity(echo);
+    }
   }
 
   /**
@@ -202,7 +204,6 @@ export class EchoService {
   ) {
     const hasContent = content && content.trim().length > 0;
     const hasFiles = files && files.length > 0;
-
     if (!hasContent && !hasFiles) {
       throw new BadRequestException(
         'Echo must contain either text content or media files',
@@ -245,7 +246,6 @@ export class EchoService {
    */
   private async uploadMediaFiles(
     files: Express.Multer.File[],
-    sensitivity: boolean = false,
   ): Promise<MediaDataType[]> {
     const uploadPromises = files.map(async (file) => {
       try {
@@ -256,8 +256,7 @@ export class EchoService {
         return {
           url: uploaded.secure_url,
           mimetype: file.mimetype,
-          sensitivity,
-          size: file.size,
+          resourceType: uploaded.resource_type,
           publicId: uploaded.public_id,
         };
       } catch (error) {

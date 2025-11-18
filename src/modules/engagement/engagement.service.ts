@@ -55,18 +55,36 @@ export class EngagementService {
       userId,
       echoId: createLikeDto.echoId,
     };
-
     const { like, notificationNeeded } =
       await this.likeRepository.like(likeData);
 
     //* 1.Create notification if needed
     if (notificationNeeded) {
-      await this.notificationService.createNotification({
-        type: 'LIKE',
-        fromUserId: userId,
-        targetUserId: like.echo.authorId,
-        echoId: createLikeDto.echoId,
-      });
+      try {
+        //* 1.0 Get echo author for notification
+        const echo = await this.likeRepository.getEchoAuthor(
+          createLikeDto.echoId,
+        );
+        //* 1.1 Create Notification
+        await this.notificationService.createNotification({
+          type: 'LIKE',
+          fromUserId: userId,
+          targetUserId: echo.authorId,
+          echoId: createLikeDto.echoId,
+        });
+
+        //* 2.Send real-time feed update to echo author
+        await this.notificationService.sendFeedUpdate(echo.authorId, {
+          type: 'ECHO_LIKED',
+          echoId: createLikeDto.echoId,
+          likedBy: userId,
+          likeCount: await this.likeRepository.getLikeCount(
+            createLikeDto.echoId,
+          ),
+        });
+      } catch (error) {
+        console.log(error);
+      }
     }
 
     return { success: true };
@@ -113,12 +131,21 @@ export class EngagementService {
 
     const { ripple, notificationNeeded } =
       await this.rippleRepository.createRipple(rippleData);
-
     //* 1.Handle notifications
-    if (notificationNeeded) {
-      await this.handleRippleNotifications(ripple, userId);
-    }
+    try {
+      if (notificationNeeded) {
+        await this.handleRippleNotifications(ripple, userId);
+      }
 
+      //* 2.Send real-time update to all users viewing this echo
+      await this.broadcastRippleUpdate(createRippleDto.echoId, {
+        type: 'NEW_RIPPLE',
+        rippleId: ripple.id,
+        echoId: createRippleDto.echoId,
+      });
+    } catch (error) {
+      console.log(error);
+    }
     return this.transformRippleToResponse(ripple);
   }
   /**
@@ -380,7 +407,6 @@ export class EngagementService {
       user: {
         id: ripple.user.id,
         username: ripple.user.username,
-        displayName: ripple.user.displayName || ripple.user.username,
         avatar: ripple.user.avatar,
       },
       replyCount: ripple._count?.replies || 0,
@@ -403,5 +429,36 @@ export class EngagementService {
     }
 
     return response;
+  }
+
+  /**
+   * TODO ====================== BROADCAST RIPPLE UPDATE ======================
+   * @param echoId
+   * @param update
+   * @returns //? Send real-time update to all users viewing an echo
+   */
+  private async broadcastRippleUpdate(
+    echoId: string,
+    update: any,
+  ): Promise<void> {
+    //? In production, you'd track which users are viewing the echo
+    //? For now, we'll log the intent
+    console.log(
+      `Would broadcast ripple update for echo ${echoId} to all viewers`,
+    );
+  }
+
+  /**
+   * TODO ====================== BROADCAST TO FOLLOWERS ======================
+   * @param userId
+   * @param update
+   * @returns //? Send real-time update to all followers of a user
+   */
+  private async broadcastToFollowers(
+    userId: string,
+    update: any,
+  ): Promise<void> {
+    // In production, you'd get followers and send updates
+    console.log(`Would broadcast to followers of user ${userId}`);
   }
 }

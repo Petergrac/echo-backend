@@ -34,9 +34,6 @@ export class AuthorSummaryDto {
   @ApiProperty({ example: 'johndoe' })
   username: string;
 
-  @ApiProperty({ example: 'John Doe' })
-  displayName: string;
-
   @ApiProperty({ 
     example: 'https://res.cloudinary.com/.../avatar.jpg',
     required: false 
@@ -117,7 +114,6 @@ export class EchoResponseDto {
       dto.author = new AuthorSummaryDto();
       dto.author.id = echo.author.id;
       dto.author.username = echo.author.username;
-      dto.author.displayName = echo.author.displayName;
       dto.author.avatar = echo.author.avatar;
     }
 

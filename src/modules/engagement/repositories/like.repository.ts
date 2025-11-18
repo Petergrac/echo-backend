@@ -29,7 +29,7 @@ export class LikeRepository extends BaseRepository {
   }
   /**
    *  TODO ====================== LIKE AN ECHO ======================
-   * @param createLikeDto 
+   * @param createLikeDto
    * @returns //? Like object and boolean indicating if notification is needed
    */
   async like(
@@ -84,8 +84,8 @@ export class LikeRepository extends BaseRepository {
   }
   /**
    *  TODO ====================== UNLIKE AN ECHO ======================
-   * @param userId 
-   * @param echoId 
+   * @param userId
+   * @param echoId
    */
   async unlike(userId: string, echoId: string): Promise<void> {
     await this.executeTransaction(async (prisma) => {
@@ -112,13 +112,13 @@ export class LikeRepository extends BaseRepository {
       });
     });
   }
- /**
-  *   TODO ====================== GET LIKE COUNTS FOR A SPECIFIC ECHO ======================
-  * @param echoId 
-  * @param page 
-  * @param limit 
-  * @returns 
-  */
+  /**
+   *   TODO ====================== GET LIKE COUNTS FOR A SPECIFIC ECHO ======================
+   * @param echoId
+   * @param page
+   * @param limit
+   * @returns
+   */
   async getLikesByEchoId(
     echoId: string,
     page: number = 1,
@@ -149,10 +149,10 @@ export class LikeRepository extends BaseRepository {
   }
   /**
    *  TODO ====================== GET LIKES AND THE PEOPLE BEHIND THEM ======================
-   * @param userId 
-   * @param page 
-   * @param limit 
-   * @returns 
+   * @param userId
+   * @param page
+   * @param limit
+   * @returns
    */
   async getUserLikes(
     userId: string,
@@ -194,12 +194,12 @@ export class LikeRepository extends BaseRepository {
 
     return { likes, total };
   }
- /**
-  *  TODO ====================== CHECK IF USER LIKED A SPECIFIC ECHO ======================
-  * @param userId 
-  * @param echoId 
-  * @returns 
-  */
+  /**
+   *  TODO ====================== CHECK IF USER LIKED A SPECIFIC ECHO ======================
+   * @param userId
+   * @param echoId
+   * @returns
+   */
   async isLiked(userId: string, echoId: string): Promise<boolean> {
     const like = await this.prisma.like.findUnique({
       where: {
@@ -212,11 +212,11 @@ export class LikeRepository extends BaseRepository {
 
     return !!like;
   }
- /**
-  *  TODO ====================== GET ALL LIKE COUNTS ======================
-  * @param echoId 
-  * @returns 
-  */
+  /**
+   *  TODO ====================== GET ALL LIKE COUNTS ======================
+   * @param echoId
+   * @returns
+   */
   async getLikeCount(echoId: string): Promise<number> {
     return this.prisma.like.count({
       where: { echoId },
@@ -224,17 +224,37 @@ export class LikeRepository extends BaseRepository {
   }
   /**
    *  TODO ====================== GET USER'S LIKES IN BATCH ======================
-   * @param userId 
-   * @param echoIds 
-   * @returns 
+   * @param userId
+   * @param echoIds
+   * @returns
    */
-  async getUserLikesBatch(userId: string, echoIds: string[]): Promise<{ echoId: string }[]> {
-  return this.prisma.like.findMany({
-    where: {
-      userId,
-      echoId: { in: echoIds },
-    },
-    select: { echoId: true },
-  });
-}
+  async getUserLikesBatch(
+    userId: string,
+    echoIds: string[],
+  ): Promise<{ echoId: string }[]> {
+    return this.prisma.like.findMany({
+      where: {
+        userId,
+        echoId: { in: echoIds },
+      },
+      select: { echoId: true },
+    });
+  }
+  /**
+   * TODO ====================== GET ECHO AUTHOR ======================
+   * @param echoId
+   * @returns
+   */
+  async getEchoAuthor(echoId: string): Promise<{ authorId: string }> {
+    const echo = await this.prisma.echo.findUnique({
+      where: { id: echoId },
+      select: { authorId: true },
+    });
+
+    if (!echo) {
+      throw new NotFoundException('Echo not found');
+    }
+
+    return echo;
+  }
 }

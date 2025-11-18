@@ -25,16 +25,19 @@ export class AuthService {
    */
   async signup(dto: SignUpDto, ip?: string, userAgent?: string) {
     //* 0. Check if email or username already exists
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: dto.email }, { username: dto.username }],
-      },
-    });
-
-    if (existingUser) {
-      const fieldTaken =
-        existingUser.email === dto.email ? 'email' : 'username';
-      throw new ConflictException(`${fieldTaken} already in use`);
+    try {
+      const existingUser = await this.prisma.user.findFirst({
+        where: {
+          OR: [{ email: dto.email }, { username: dto.username }],
+        },
+      });
+      if (existingUser) {
+        const fieldTaken =
+          existingUser.email === dto.email ? 'email' : 'username';
+        throw new ConflictException(`${fieldTaken} already in use`);
+      }
+    } catch (error) {
+      throw new ConflictException('Error checking existing user');
     }
 
     //* 1. Hash password
@@ -45,6 +48,11 @@ export class AuthService {
       data: {
         email: dto.email,
         username: dto.username,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        bio: dto.bio || null,
+        website: dto.website || null,
+        location: dto.location || null,
         passwordHash,
       },
     });

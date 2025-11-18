@@ -197,11 +197,11 @@ model Media {
   url       String
   publicId  String?   //? cloudinary public id
   mimetype  String
-  sensitivity Boolean  @default(false)
   resourceType String?
   createdAt DateTime  @default(now())
 
   echo Echo @relation(fields: [echoId], references: [id], onDelete: Cascade)
+  @@index([echoId])
 }
 //? Like type of the engagement
 enum TargetType {
@@ -214,15 +214,12 @@ model Like {
   id        String   @id @default(cuid())
   userId    String
   echoId    String
-  rippleId  String?
   targetType TargetType @default(ECHO) 
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   echo Echo @relation(fields: [echoId], references: [id], onDelete: Cascade)
-  ripple Ripple? @relation(fields: [rippleId], references: [id], onDelete: Cascade)
   @@unique([userId, echoId])
-  @@unique([userId, rippleId])
   @@index([echoId, createdAt])
   @@index([userId, createdAt])
 }
@@ -241,7 +238,6 @@ model Ripple {
   echo   Echo   @relation(fields: [echoId], references: [id], onDelete: Cascade)
   parent Ripple? @relation("RippleReplies", fields: [parentId], references: [id])
   replies Ripple[] @relation("RippleReplies")
-  likes   Like[]
   notifications Notification[]
 
   @@index([echoId, createdAt])

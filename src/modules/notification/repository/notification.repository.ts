@@ -8,7 +8,7 @@ export class NotificationRepository {
   //TODO =========== CREATE FOLLOW NOTIFICATION =======
   async createANotification(data: NotificationData) {
     try {
-      await this.prisma.notification.create({
+      return await this.prisma.notification.create({
         data: {
           userId: data.targetUserId,
           fromId: data.fromUserId,
