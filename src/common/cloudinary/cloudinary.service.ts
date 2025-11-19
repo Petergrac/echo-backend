@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import {
   v2 as Cloudinary,
   UploadApiErrorResponse,
@@ -39,7 +44,11 @@ export class CloudinaryService {
   constructor(@Inject('CLOUDINARY') cloudinary: typeof Cloudinary) {
     this.cloudinary = cloudinary as unknown as TypedCloudinary;
   }
-
+  /**
+   * TODO ==================== UPLOAD USER AVATAR IMAGE ============
+   * @param file
+   * @returns
+   */
   async uploadImage(file: Express.Multer.File): Promise<UploadApiResponse> {
     if (!file) {
       throw new BadRequestException('No file provided');
@@ -57,10 +66,81 @@ export class CloudinaryService {
           },
           (error?: UploadApiErrorResponse, result?: UploadApiResponse) => {
             if (error) {
-              const err = new Error(
+              const err = new InternalServerErrorException(
                 `Cloudinary upload failed: ${error.message}`,
               );
               // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              (err as any).http_code = error.http_code;
+              reject(err);
+              return;
+            }
+            if (!result) {
+              reject('Cloudinary upload failed: No result returned');
+              return;
+            }
+            resolve(result);
+          },
+        )
+        .end(file.buffer);
+    });
+  }
+  /**
+   * TODO========================== DELETE THE IMAGE UPON USER CHANGE OR ACCOUNT DELETION ====
+   * @param publicId
+   * @returns
+   */
+  async deleteFile(
+    publicId: string,
+    resource_type: string,
+  ): Promise<CloudinaryDeleteResponse> {
+    return new Promise((resolve, reject) => {
+      this.cloudinary.uploader.destroy(
+        publicId,
+        {
+          resource_type,
+        },
+        (error: any, result: CloudinaryDeleteResponse) => {
+          if (error) {
+            reject(`Cloudinary deletion failed: ${error.message}`);
+            return;
+          }
+          if (result.result !== 'ok') {
+            reject(`Failed to delete the file: ${result.result}`);
+            return;
+          }
+          resolve(result);
+        },
+      );
+    });
+  }
+
+  // Helper method to extract public_id from Cloudinary URL
+  extractPublicId(imageUrl: string): string {
+    const matches = imageUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.\w+$/);
+    return matches ? matches[1] : imageUrl;
+  }
+
+  /**
+   * TODO ========================== UPLOAD MEDIA FILES FOR ECHO =============
+   * @param file
+   * @returns
+   */
+  async uploadFile(file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+    return new Promise((resolve, reject) => {
+      this.cloudinary.uploader
+        .upload_stream(
+          {
+            folder: 'echo_media',
+            resource_type: 'auto',
+          },
+          (error?: UploadApiErrorResponse, result?: UploadApiResponse) => {
+            if (error) {
+              const err = new Error(
+                `Cloudinary upload failed: ${error.message}`,
+              );
               (err as any).http_code = error.http_code;
               reject(err);
               return;
@@ -74,33 +154,5 @@ export class CloudinaryService {
         )
         .end(file.buffer);
     });
-  }
-
-  async deleteImage(publicId: string): Promise<CloudinaryDeleteResponse> {
-    return new Promise((resolve, reject) => {
-      this.cloudinary.uploader.destroy(
-        publicId,
-        {
-          resource_type: 'image',
-        },
-        (error: any, result: CloudinaryDeleteResponse) => {
-          if (error) {
-            reject(new Error(`Cloudinary deletion failed: ${error.message}`));
-            return;
-          }
-          if (result.result !== 'ok') {
-            reject(new Error(`Failed to delete image: ${result.result}`));
-            return;
-          }
-          resolve(result);
-        },
-      );
-    });
-  }
-
-  // Helper method to extract public_id from Cloudinary URL
-  extractPublicId(imageUrl: string): string {
-    const matches = imageUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.\w+$/);
-    return matches ? matches[1] : imageUrl;
   }
 }

@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-// src/modules/auth/auth.controller.ts
-
 import {
   Controller,
   Post,
@@ -93,7 +91,6 @@ export class AuthController {
 
     const { user, accessToken, refreshToken, refreshExpiresAt } =
       await this.authService.login(dto, ip, userAgent);
-    console.log(refreshToken);
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

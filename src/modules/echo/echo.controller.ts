@@ -1,42 +1,111 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
+  UseGuards,
+  Req,
+  UseInterceptors,
+  UploadedFiles,
+  Get,
   Param,
+  Patch,
   Delete,
+  Query,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { EchoService } from './echo.service';
 import { CreateEchoDto } from './dto/create-echo.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import  { Request } from 'express';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileValidationPipe } from './pipes/file-validation.pipe';
 import { UpdateEchoDto } from './dto/update-echo.dto';
 
 @Controller('echo')
+@UseGuards(JwtAuthGuard)
 export class EchoController {
   constructor(private readonly echoService: EchoService) {}
-
+  /**
+   * TODO ================ CREATE AN ECHO WITH FILE UPLOADS =============
+   * @param dto
+   * @param req
+   * @param files
+   * @returns
+   */
   @Post()
-  create(@Body() createEchoDto: CreateEchoDto) {
-    return this.echoService.create(createEchoDto);
+  @UseInterceptors(FilesInterceptor('media', 5))
+  async createEcho(
+    @Body() dto: CreateEchoDto,
+    @Req() req: Request,
+    @UploadedFiles(FileValidationPipe) files: Express.Multer.File[],
+  ) {
+    const userId = (req.user as { userId: string }).userId;
+    const ip = req.ip;
+    const userAgent = req.get('user-agent');
+    return await this.echoService.createEcho(userId, dto, files, ip, userAgent);
   }
 
-  @Get()
-  findAll() {
-    return this.echoService.findAll();
-  }
-
+  /**
+   * TODO ============================ GET ECHO BY ID ============================
+   * @param id
+   * @returns
+   */
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.echoService.findOne(+id);
+  async getEcho(@Param('id') id: string,@Req() req: Request) {
+    const userId = (req.user as {userId: string}).userId;
+    return await this.echoService.getEchoById(id,userId);
   }
 
+  /**
+   * TODO ============================ UPDATE ECHO ============================
+   * @param id
+   * @param dto
+   * @param req
+   * @returns
+   */
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEchoDto: UpdateEchoDto) {
-    return this.echoService.update(+id, updateEchoDto);
+  @UseGuards(JwtAuthGuard)
+  async updateEcho(
+    @Param('id') id: string,
+    @Body() dto: UpdateEchoDto,
+    @Req() req: Request,
+  ) {
+    const userId = (req.user as { userId: string }).userId;
+    const userRole = (req.user as { role?: string }).role;
+    return await this.echoService.updateEcho(userId, id, dto, userRole);
   }
 
+  /**
+   * TODO ============================ DELETE ECHO ============================
+   * @param id
+   * @param req
+   * @returns
+   */
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.echoService.remove(+id);
+  @UseGuards(JwtAuthGuard)
+  async deleteEcho(@Param('id') id: string, @Req() req: Request) {
+    const userId = (req.user as { userId: string }).userId;
+    const userRole = (req.user as { role?: string }).role;
+    const ip = req.ip;
+    const userAgent = req.get('user-agent');
+    return await this.echoService.deleteEcho(
+      userId,
+      id,
+      userRole,
+      ip,
+      userAgent,
+    );
+  }
+
+  @Get('users/:userId/echoes')
+  async getUserEchoes(
+    @Param('userId') userId: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    const skip = (page - 1) * limit;
+    // You'll need to add this method to your service
+    return await this.echoService.getUserEchoes(userId, skip, limit);
   }
 }

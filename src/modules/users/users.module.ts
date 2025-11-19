@@ -7,7 +7,7 @@ import { FileValidationPipe } from '../../common/pipes/file-validation.pipe';
 import { FollowController } from './follow/follow.controller';
 import { FollowService } from './follow/follow.service';
 import { FollowRepository } from './repository/follow.repository';
-import { NotificationsModule } from '../notifications/notifications.module';
+import { NotificationsModule } from '../notification/notifications.module';
 
 @Module({
   imports: [CloudinaryModule, NotificationsModule],

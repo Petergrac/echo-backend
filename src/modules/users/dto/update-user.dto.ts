@@ -23,6 +23,18 @@ export class UpdateUserDto extends PartialType(
   @MaxLength(30)
   username?: string;
 
+   @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(30)
+  lastName?: string;
+
+   @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(30)
+  firstName?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(500)
