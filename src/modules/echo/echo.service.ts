@@ -16,6 +16,7 @@ import { UpdateEchoDto } from './dto/update-echo.dto';
 import { EchoResponseDto } from './dto/echo-response.dto';
 import { PaginatedResponseDto, PaginationMetaDto } from './dto/pagination.dto';
 import { HashtagService } from '../hashtag/hashtag.service';
+import { EngagementService } from '../engagement/engagement.service';
 
 @Injectable()
 export class EchoService {
@@ -24,6 +25,7 @@ export class EchoService {
     private readonly repo: EchoRepository,
     private readonly audit: AuditService,
     private readonly hashtagService: HashtagService,
+    private readonly engagementService: EngagementService,
   ) {}
   /**
    * TODO ============================ CREATE ECHO ============================
@@ -152,14 +154,27 @@ export class EchoService {
    * @param id // ID of the Echo to retrieve
    * @returns  // Retrieve an Echo by its ID, throwing an error if not found
    */
-  async getEchoById(id: string) {
+  async getEchoById(id: string, userId: string) {
     const echo = await this.repo.findById(id);
 
     if (!echo) {
       throw new NotFoundException('Echo not found');
     }
 
-    return echo;
+    //* Enrich with engagement data
+    const engagementData = await this.engagementService.getEngagementCounts(
+      echo.id,
+    );
+    //* Get the engagement state for the requesting user
+    const engagementState = await this.engagementService.getUserEngagementState(
+      userId,
+      echo.id,
+    );
+    return {
+      echo: echo,
+      engagement: engagementData,
+      engagementState: engagementState,
+    };
   }
 
   /**

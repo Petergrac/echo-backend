@@ -17,11 +17,11 @@ export class ReEchoRepository extends BaseRepository {
   constructor(prisma: PrismaService) {
     super(prisma);
   }
- /**
-  *  TODO ====================== REECHO AN ECHO ======================
-  * @param createReEchoDto 
-  * @returns 
-  */
+  /**
+   *  TODO ====================== REECHO AN ECHO ======================
+   * @param createReEchoDto
+   * @returns
+   */
   async reecho(
     createReEchoDto: CreateReEchoDto,
   ): Promise<{ reecho: any; notificationNeeded: boolean }> {
@@ -79,8 +79,8 @@ export class ReEchoRepository extends BaseRepository {
   }
   /**
    * TODO ====================== UNRE ECHO AN ECHO ======================
-   * @param userId 
-   * @param echoId 
+   * @param userId
+   * @param echoId
    */
   async unreecho(userId: string, echoId: string): Promise<void> {
     await this.executeTransaction(async (prisma) => {
@@ -109,10 +109,10 @@ export class ReEchoRepository extends BaseRepository {
   }
   /**
    * TODO ====================== GET ALL REECHOES FOR A SPECIFIC ECHO ======================
-   * @param echoId 
-   * @param page 
-   * @param limit 
-   * @returns 
+   * @param echoId
+   * @param page
+   * @param limit
+   * @returns // todo  ===> Return all users who reechoed this echo
    */
   async getReEchoesByEchoId(
     echoId: string,
@@ -129,6 +129,8 @@ export class ReEchoRepository extends BaseRepository {
             select: {
               id: true,
               username: true,
+              firstName: true,
+              lastName: true,
               avatar: true,
             },
           },
@@ -144,16 +146,20 @@ export class ReEchoRepository extends BaseRepository {
   }
   /**
    * TODO ====================== GET ALL REECHOES FOR A SPECIFIC USER ===================
-   * @param userId 
-   * @param page 
-   * @param limit 
-   * @returns 
+   * @param userId
+   * @param page
+   * @param limit
+   * @returns
    */
   async getUserReEchoes(
     userId: string,
     page: number = 1,
     limit: number = 20,
-  ): Promise<{ reechoes: any[]; total: number }> {
+  ): Promise<{
+    reechoes: any[];
+    total: number;
+    meta: { hasNextPage: boolean; hasPreviousPage: boolean; totalPages: number };
+  }> {
     const skip = (page - 1) * limit;
 
     const [reechoes, total] = await Promise.all([
@@ -167,6 +173,8 @@ export class ReEchoRepository extends BaseRepository {
                 select: {
                   id: true,
                   username: true,
+                  firstName: true,
+                  lastName: true,
                   avatar: true,
                 },
               },
@@ -182,19 +190,25 @@ export class ReEchoRepository extends BaseRepository {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: limit + 1,
       }),
       this.prisma.reEcho.count({ where: { userId } }),
     ]);
-
-    return { reechoes, total };
+    const hasNextPage = skip + limit < total;
+    const hasPreviousPage = page > 1;
+    const totalPages = Math.ceil(total / limit);
+    return {
+      reechoes,
+      total,
+      meta: { hasNextPage, hasPreviousPage, totalPages },
+    };
   }
- /**
-  * TODO ====================== CHECK IF USER REECHOED A SPECIFIC ECHO ======================
-  * @param userId 
-  * @param echoId 
-  * @returns 
-  */
+  /**
+   * TODO ====================== CHECK IF USER REECHOED A SPECIFIC ECHO ======================
+   * @param userId
+   * @param echoId
+   * @returns
+   */
   async isReEchoed(userId: string, echoId: string): Promise<boolean> {
     const reecho = await this.prisma.reEcho.findUnique({
       where: {
@@ -210,21 +224,24 @@ export class ReEchoRepository extends BaseRepository {
 
   /**
    * TODO ====================== GET ALL REECHO COUNTS ======================
-   * @param echoId 
-   * @returns 
+   * @param echoId
+   * @returns
    */
   async getReEchoCount(echoId: string): Promise<number> {
     return this.prisma.reEcho.count({
       where: { echoId },
     });
   }
-  async getUserReEchoesBatch(userId: string, echoIds: string[]): Promise<{ echoId: string }[]> {
-  return this.prisma.reEcho.findMany({
-    where: {
-      userId,
-      echoId: { in: echoIds },
-    },
-    select: { echoId: true },
-  });
-}
+  async getUserReEchoesBatch(
+    userId: string,
+    echoIds: string[],
+  ): Promise<{ echoId: string }[]> {
+    return this.prisma.reEcho.findMany({
+      where: {
+        userId,
+        echoId: { in: echoIds },
+      },
+      select: { echoId: true },
+    });
+  }
 }

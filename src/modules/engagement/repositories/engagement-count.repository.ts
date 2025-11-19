@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma.service';
+import { Prisma } from '../../../generated/prisma/client';
 
 export interface EngagementCounts {
   likes: number;
@@ -33,75 +34,77 @@ export class EngagementCountRepository {
 
     return { likes, ripples, reechoes, bookmarks };
   }
- /**
-  *  TODO ====================== GET COUNTS FOR MULTIPLE ECHOES ======================
-  * @param echoIds 
-  * @returns //? Map of echo IDs to their respective engagement counts
-  */
+  /**
+   *  TODO ====================== GET COUNTS FOR MULTIPLE ECHOES ======================
+   * @param echoIds
+   * @returns //? Map of echo IDs to their respective engagement counts
+   */
   async getCountsForEchoes(
     echoIds: string[],
   ): Promise<Map<string, EngagementCounts>> {
+    if (echoIds.length === 0) return new Map();
+
+    //* 1.Single optimized query using raw SQL for best performance
+    const counts = await this.prisma.$queryRaw<
+      Array<{
+        echoId: string;
+        likes: number;
+        ripples: number;
+        reechoes: number;
+        bookmarks: number;
+      }>
+    >`
+    SELECT 
+      e.id as "echoId",
+      COALESCE(l.likes, 0) as likes,
+      COALESCE(r.ripples, 0) as ripples,
+      COALESCE(re.reechoes, 0) as reechoes,
+      COALESCE(b.bookmarks, 0) as bookmarks
+    FROM "Echo" e
+    LEFT JOIN (
+      SELECT "echoId", COUNT(*) as likes
+      FROM "Like" 
+      WHERE "echoId" IN (${Prisma.join(echoIds)})
+      GROUP BY "echoId"
+    ) l ON e.id = l."echoId"
+    LEFT JOIN (
+      SELECT "echoId", COUNT(*) as ripples
+      FROM "Ripple" 
+      WHERE "echoId" IN (${Prisma.join(echoIds)})
+        AND "deleted" = false
+        AND "parentId" IS NULL
+      GROUP BY "echoId"
+    ) r ON e.id = r."echoId"
+    LEFT JOIN (
+      SELECT "echoId", COUNT(*) as reechoes
+      FROM "ReEcho" 
+      WHERE "echoId" IN (${Prisma.join(echoIds)})
+      GROUP BY "echoId"
+    ) re ON e.id = re."echoId"
+    LEFT JOIN (
+      SELECT "echoId", COUNT(*) as bookmarks
+      FROM "Bookmark" 
+      WHERE "echoId" IN (${Prisma.join(echoIds)})
+      GROUP BY "echoId"
+    ) b ON e.id = b."echoId"
+    WHERE e.id IN (${Prisma.join(echoIds)})
+  `;
+
     const countsMap = new Map<string, EngagementCounts>();
-
-    //* 1.Get all counts in parallel
-    const [likes, ripples, reechoes, bookmarks] = await Promise.all([
-      this.prisma.like.groupBy({
-        by: ['echoId'],
-        _count: { id: true },
-        where: { echoId: { in: echoIds } },
-      }),
-      this.prisma.ripple.groupBy({
-        by: ['echoId'],
-        _count: { id: true },
-        where: {
-          echoId: { in: echoIds },
-          deleted: false,
-          parentId: null,
-        },
-      }),
-      this.prisma.reEcho.groupBy({
-        by: ['echoId'],
-        _count: { id: true },
-        where: { echoId: { in: echoIds } },
-      }),
-      this.prisma.bookmark.groupBy({
-        by: ['echoId'],
-        _count: { id: true },
-        where: { echoId: { in: echoIds } },
-      }),
-    ]);
-
-    //* 2.Initialize map with zero counts
-    echoIds.forEach((id) => {
-      countsMap.set(id, { likes: 0, ripples: 0, reechoes: 0, bookmarks: 0 });
-    });
-
-    //* 3.Populate with actual counts
-    likes.forEach((item) => {
-      const counts = countsMap.get(item.echoId);
-      if (counts) counts.likes = item._count.id;
-    });
-
-    ripples.forEach((item) => {
-      const counts = countsMap.get(item.echoId);
-      if (counts) counts.ripples = item._count.id;
-    });
-
-    reechoes.forEach((item) => {
-      const counts = countsMap.get(item.echoId);
-      if (counts) counts.reechoes = item._count.id;
-    });
-
-    bookmarks.forEach((item) => {
-      const counts = countsMap.get(item.echoId);
-      if (counts) counts.bookmarks = item._count.id;
+    counts.forEach((item) => {
+      countsMap.set(item.echoId, {
+        likes: Number(item.likes),
+        ripples: Number(item.ripples),
+        reechoes: Number(item.reechoes),
+        bookmarks: Number(item.bookmarks),
+      });
     });
 
     return countsMap;
   }
   /**
    *  TODO ====================== GET USER ENGAGEMENT STATISTICS ======================
-   * @param userId 
+   * @param userId
    * @returns // ? Statistics of a user's engagement activities
    */
   async getUserEngagementStats(userId: string): Promise<{

@@ -1,7 +1,6 @@
 import {
   ForbiddenException,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import {
   FollowUser,
@@ -10,13 +9,7 @@ import {
 } from '../../../common/types/follow.types';
 import { FollowRepository } from '../repository/follow.repository';
 import { NotificationService } from '../../notification/notifications.service';
-import { NotificationType } from '../../../generated/prisma/enums';
 
-interface dataType {
-  targetUserId: string;
-  fromUserId: string;
-  type: NotificationType;
-}
 @Injectable()
 export class FollowService {
   constructor(
@@ -38,7 +31,7 @@ export class FollowService {
     if (targetUserId === currentUserId) {
       throw new ForbiddenException('You cannot follow yourself');
     }
-
+    //? Check if is already following
     const existingFollow = await this.followRepository.findExistingFollow(
       currentUserId,
       targetUserId,
@@ -62,35 +55,6 @@ export class FollowService {
       });
       return { action: 'followed', following: result.following };
     }
-  }
-
-  /**
-   * TODO ======================= UNFOLLOW A USER ================
-   * @param targetUserId
-   * @param currentUserId
-   * @returns //* This function return a message when you successfully unfollow a user
-   */
-  async unfollowUser(
-    targetUserId: string,
-    currentUserId: string,
-  ): Promise<{ message: string }> {
-    //* 1. Prevent self-unfollow (though it shouldn't happen, but good to check)
-    if (targetUserId === currentUserId) {
-      throw new ForbiddenException('Invalid operation');
-    }
-    //* 2. Check if you are following the user
-    const existingFollow = await this.followRepository.findExistingFollow(
-      currentUserId,
-      targetUserId,
-    );
-
-    if (!existingFollow) {
-      throw new NotFoundException('You are not following this user');
-    }
-    //* 3. Delete the record(unfollow)
-    await this.followRepository.deleteFollowById(existingFollow.id);
-
-    return { message: 'Successfully unfollowed user' };
   }
   /**
    * TODO ====================== GET SPECIFIC USER'S FOLLOWERS =======
@@ -135,25 +99,5 @@ export class FollowService {
       validPage,
       validLimit,
     );
-  }
-  /**
-   * TODO========================= GET THE FOLLOW STATUS OF THE USER
-   * @param currentUserId
-   * @param targetUserId
-   * @returns //* boolean of isFollowing the target user.
-   */
-  async getFollowStatus(
-    currentUserId: string,
-    targetUserId: string,
-  ): Promise<{ isFollowing: boolean }> {
-    if (currentUserId === targetUserId) {
-      return { isFollowing: false };
-    }
-
-    const isFollowing = await this.followRepository.isFollowing(
-      currentUserId,
-      targetUserId,
-    );
-    return { isFollowing };
   }
 }

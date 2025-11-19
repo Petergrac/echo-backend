@@ -47,7 +47,7 @@ export class EngagementService {
    * @param createLikeDto
    * @returns
    */
-  async likeEcho(
+  async toggleLike(
     userId: string,
     createLikeDto: CreateLikeDto,
   ): Promise<{ success: boolean }> {
@@ -55,8 +55,8 @@ export class EngagementService {
       userId,
       echoId: createLikeDto.echoId,
     };
-    const { like, notificationNeeded } =
-      await this.likeRepository.like(likeData);
+    const { notificationNeeded } =
+      await this.likeRepository.toggleLike(likeData);
 
     //* 1.Create notification if needed
     if (notificationNeeded) {
@@ -90,19 +90,6 @@ export class EngagementService {
     return { success: true };
   }
   /**
-   * TODO ==================== UNLIKE AN ECHO OPERATION ====================
-   * @param userId
-   * @param echoId
-   * @returns
-   */
-  async unlikeEcho(
-    userId: string,
-    echoId: string,
-  ): Promise<{ success: boolean }> {
-    await this.likeRepository.unlike(userId, echoId);
-    return { success: true };
-  }
-  /**
    *  TODO ==================== GET LIKES OF A SPECIFIC ECHO ====================
    * @param echoId
    * @param page
@@ -114,7 +101,30 @@ export class EngagementService {
   }
 
   async getUserLikes(userId: string, page: number = 1, limit: number = 20) {
-    return this.likeRepository.getUserLikes(userId, page, limit);
+    const response = this.likeRepository.getUserLikes(userId, page, limit);
+    //* Enrich likes with echo states & counts
+    const likes = (await response).likes;
+    const echoIds = likes.map((like) => like.echoId);
+    const engagementStates = await this.getBatchEngagementStates(
+      userId,
+      echoIds,
+    );
+    const engagementCounts = await this.getBatchEngagementCounts(echoIds);
+    //* Map states and counts to likes
+    const enrichedEchoes = likes.map((like) => ({
+      ...like,
+      engagementStates: engagementStates.get(like.echoId),
+      engagementCounts: engagementCounts.get(like.echoId),
+    }));
+
+    const meta = {
+      hasNexPage: (await response).total > page * limit,
+      currentPage: page,
+      hasPreviousPage: page > 1,
+      totalPages: Math.ceil((await response).total / limit),
+    };
+
+    return { userLikedEchoes: enrichedEchoes, meta };
   }
 
   // TODO==================== RIPPLE (REPLY) OPERATIONS ====================
@@ -182,11 +192,6 @@ export class EngagementService {
         hasPrev: page > 1,
       },
     };
-  }
-
-  async getRippleThread(rippleId: string): Promise<RippleResponseDto | null> {
-    const ripple = await this.rippleRepository.getRippleThread(rippleId);
-    return ripple ? this.transformRippleToResponse(ripple) : null;
   }
 
   /**
@@ -262,12 +267,25 @@ export class EngagementService {
     return { success: true };
   }
 
-  async getEchoReEchoes(echoId: string, page: number = 1, limit: number = 20) {
-    return this.reechoRepository.getReEchoesByEchoId(echoId, page, limit);
-  }
-
   async getUserReEchoes(userId: string, page: number = 1, limit: number = 20) {
-    return this.reechoRepository.getUserReEchoes(userId, page, limit);
+    const reechoes = this.reechoRepository.getUserReEchoes(userId, page, limit);
+    const reechoesIds = (await reechoes).reechoes.map(
+      (reecho) => reecho.echoId,
+    );
+    //* Enrich it with echo states
+    const engagementState = await this.getBatchEngagementStates(
+      userId,
+      reechoesIds,
+    );
+    //* Map the states to their respective reechoes
+    const enrichedReEchoes = (await reechoes).reechoes.map((reecho) => ({
+      ...reecho,
+      engagementState: engagementState.get(reecho.echoId),
+    }));
+    return {
+      reechoes: enrichedReEchoes,
+      meta: (await reechoes).meta,
+    };
   }
 
   // TODO==================== BOOKMARK OPERATIONS ====================
@@ -293,7 +311,35 @@ export class EngagementService {
   }
 
   async getUserBookmarks(userId: string, page: number = 1, limit: number = 20) {
-    return this.bookmarkRepository.getUserBookmarks(userId, page, limit);
+    const { bookmarks, total } = await this.bookmarkRepository.getUserBookmarks(
+      userId,
+      page,
+      limit,
+    );
+    //* Enrich bookmarks with echo states & counts
+    const echoIds = bookmarks.map((bookmark) => bookmark.echoId);
+    const engagementStates = await this.getBatchEngagementStates(
+      userId,
+      echoIds,
+    );
+    const engagementCounts = await this.getBatchEngagementCounts(echoIds);
+
+    //* Map states and counts to bookmarks
+    const enrichedBookmarks = bookmarks.map((bookmark) => ({
+      ...bookmark,
+      engagementStates: engagementStates.get(bookmark.echoId),
+      engagementCounts: engagementCounts.get(bookmark.echoId),
+    }));
+
+    const totalPages = Math.ceil(total / limit);
+    return {
+      enrichedBookmarks,
+      hasNexPage: totalPages > page,
+      currentPage: page,
+      hasPreviousPage: page > 1,
+      totalPages,
+      limit,
+    };
   }
 
   // TODO==================== ENGAGEMENT STATE & COUNTS ====================
@@ -310,7 +356,6 @@ export class EngagementService {
       this.reechoRepository.isReEchoed(userId, echoId),
       this.bookmarkRepository.isBookmarked(userId, echoId),
     ]);
-
     return { liked, reechoed, bookmarked };
   }
 
@@ -360,7 +405,7 @@ export class EngagementService {
   }
 
   /**
-   * TODO ====================== GET ENGAGEMENT COUNTS FOR MULTIPLE ECHOES ======================
+   * TODO ====================== GET BATCH ENGAGEMENT COUNTS FOR MULTIPLE ECHOES ======================
    * @param echoIds
    * @returns //? Map of echo IDs to their respective engagement counts
    */
@@ -375,7 +420,7 @@ export class EngagementService {
     ripple: RippleWithRelations,
     userId: string,
   ): Promise<void> {
-    // Notify echo author if it's not their ripple
+    //? Notify echo author if it's not their ripple
     if (ripple.echo.authorId !== userId) {
       await this.notificationService.createNotification({
         type: 'RIPPLE',
@@ -407,6 +452,8 @@ export class EngagementService {
       user: {
         id: ripple.user.id,
         username: ripple.user.username,
+        firstName: ripple.user.firstName,
+        lastName: ripple.user.lastName,
         avatar: ripple.user.avatar,
       },
       replyCount: ripple._count?.replies || 0,

@@ -116,14 +116,10 @@ export class BookmarkRepository extends BaseRepository {
                 select: {
                   id: true,
                   username: true,
+                  firstName: true,
+                  lastName: true,
+
                   avatar: true,
-                },
-              },
-              _count: {
-                select: {
-                  likes: true,
-                  ripples: true,
-                  reechoes: true,
                 },
               },
             },

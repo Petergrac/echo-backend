@@ -134,34 +134,38 @@ export class UserRepository {
     //TODO ===> GET NUMBER OF USERS => For creating pages
     const totalUsers = await this.prisma.user.count({ where });
     //TODO =====> GET USERS BASED ON THE WHERE CONDITION
-    const users = await this.prisma.user.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        location: true,
-        website: true,
-        avatar: true,
-        emailVerified: true,
-      },
-    });
-    //TODO =====> CALCULATE NUMBER OF PAGES BASED ON USERS
-    const totalPages = Math.ceil(totalUsers / limit);
-    // TODO ======> RETURN THE RESULT
-    return {
-      data: users,
-      meta: {
-        total: totalUsers,
-        page,
-        limit,
-        totalPages,
-        previousPage: page > 1 ? page - 1 : null,
-        nextPage: page < totalPages ? page + 1 : null,
-      },
-    };
+    try {
+      const users = await this.prisma.user.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          location: true,
+          website: true,
+          avatar: true,
+          emailVerified: true,
+        },
+      });
+      //TODO =====> CALCULATE NUMBER OF PAGES BASED ON USERS
+      const totalPages = Math.ceil(totalUsers / limit);
+      // TODO ======> RETURN THE RESULT
+      return {
+        data: users,
+        meta: {
+          total: totalUsers,
+          page,
+          limit,
+          totalPages,
+          previousPage: page > 1 ? page - 1 : null,
+          nextPage: page < totalPages ? page + 1 : null,
+        },
+      };
+    } catch (error) {
+      console.log(error);
+    }
   }
 }

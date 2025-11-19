@@ -1,6 +1,5 @@
 import {
   Controller,
-  Delete,
   Get,
   Param,
   Post,
@@ -35,17 +34,9 @@ export class FollowController {
     return await this.followService.getFollowing(id, page, limit);
   }
 
-  @Post('follow')
+  @Post('toggle-follow')
   async followUser(@Param('id') followerId: string, @Req() req: Request) {
     const userId = (req.user as { userId: string }).userId;
-
     return await this.followService.toggleFollow(followerId, userId);
-  }
-
-  @Delete('unfollow')
-  async unfollowUser(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req.user as { userId: string }).userId;
-
-    return await this.followService.unfollowUser(id, userId);
   }
 }

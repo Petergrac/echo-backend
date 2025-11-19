@@ -27,12 +27,12 @@ export class EchoRepository {
     mediaData?: MediaDataType[],
   ) {
     try {
-      const result =  await this.prisma.echo.create({
+      const result = await this.prisma.echo.create({
         data: {
           content: dto.content?.trim(),
           authorId: userId,
           media: {
-            create: mediaData ,
+            create: mediaData,
           },
         },
         include: {
@@ -70,6 +70,8 @@ export class EchoRepository {
             select: {
               id: true,
               username: true,
+              firstName: true,
+              lastName: true,
               avatar: true,
             },
           },
@@ -167,8 +169,8 @@ export class EchoRepository {
 
   /**
    * TODO ============================ COUNT ECHO BY USER ID ============================
-   * @param userId 
-   * @returns 
+   * @param userId
+   * @returns
    */
   async countByUserId(userId: string): Promise<number> {
     try {

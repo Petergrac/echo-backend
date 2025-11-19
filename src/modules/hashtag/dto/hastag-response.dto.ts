@@ -1,4 +1,3 @@
-// src/hashtag/dto/hashtag-response.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 
 export class HashtagDto {

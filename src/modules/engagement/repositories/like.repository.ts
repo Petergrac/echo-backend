@@ -32,7 +32,7 @@ export class LikeRepository extends BaseRepository {
    * @param createLikeDto
    * @returns //? Like object and boolean indicating if notification is needed
    */
-  async like(
+  async toggleLike(
     createLikeDto: CreateLikeDto,
   ): Promise<{ like: any; notificationNeeded: boolean }> {
     return this.executeTransaction(async (prisma) => {
@@ -46,8 +46,17 @@ export class LikeRepository extends BaseRepository {
         },
       });
 
+      //* If like exists, remove it first (toggle behavior)
       if (existingLike) {
-        throw new ConflictException('You have already liked this echo');
+        await prisma.like.delete({
+          where: {
+            userId_echoId: {
+              userId: createLikeDto.userId,
+              echoId: createLikeDto.echoId,
+            },
+          },
+        });
+        return { like: null, notificationNeeded: false };
       }
 
       //* 2.Get echo to check ownership for notification
@@ -64,7 +73,6 @@ export class LikeRepository extends BaseRepository {
       const like = await prisma.like.create({
         data: {
           ...createLikeDto,
-          targetType: 'ECHO',
         },
         include: {
           user: {
@@ -80,36 +88,6 @@ export class LikeRepository extends BaseRepository {
       //? Determine if notification is needed (not liking your own echo)
       const notificationNeeded = echo.authorId !== createLikeDto.userId;
       return { like, notificationNeeded };
-    });
-  }
-  /**
-   *  TODO ====================== UNLIKE AN ECHO ======================
-   * @param userId
-   * @param echoId
-   */
-  async unlike(userId: string, echoId: string): Promise<void> {
-    await this.executeTransaction(async (prisma) => {
-      const like = await prisma.like.findUnique({
-        where: {
-          userId_echoId: {
-            userId,
-            echoId,
-          },
-        },
-      });
-
-      if (!like) {
-        throw new NotFoundException('Like not found');
-      }
-
-      await prisma.like.delete({
-        where: {
-          userId_echoId: {
-            userId,
-            echoId,
-          },
-        },
-      });
     });
   }
   /**
@@ -134,6 +112,8 @@ export class LikeRepository extends BaseRepository {
             select: {
               id: true,
               username: true,
+              firstName: true,
+              lastName: true,
               avatar: true,
             },
           },
@@ -172,14 +152,9 @@ export class LikeRepository extends BaseRepository {
                 select: {
                   id: true,
                   username: true,
+                  firstName: true,
+                  lastName: true,
                   avatar: true,
-                },
-              },
-              _count: {
-                select: {
-                  likes: true,
-                  ripples: true,
-                  reechoes: true,
                 },
               },
             },

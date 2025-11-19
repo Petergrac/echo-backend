@@ -42,6 +42,8 @@ export class RippleResponseDto {
   user: {
     id: string;
     username: string;
+    firstName: String;
+    lastName: string;
     avatar?: string;
   };
 

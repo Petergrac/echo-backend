@@ -17,7 +17,7 @@ import {
 import { EchoService } from './echo.service';
 import { CreateEchoDto } from './dto/create-echo.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import type { Request } from 'express';
+import  { Request } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { FileValidationPipe } from './pipes/file-validation.pipe';
 import { UpdateEchoDto } from './dto/update-echo.dto';
@@ -52,8 +52,9 @@ export class EchoController {
    * @returns
    */
   @Get(':id')
-  async getEcho(@Param('id') id: string) {
-    return await this.echoService.getEchoById(id);
+  async getEcho(@Param('id') id: string,@Req() req: Request) {
+    const userId = (req.user as {userId: string}).userId;
+    return await this.echoService.getEchoById(id,userId);
   }
 
   /**

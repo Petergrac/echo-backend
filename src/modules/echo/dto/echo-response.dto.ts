@@ -1,4 +1,3 @@
-// src/echo/dto/echo-response.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 
 export class MediaResponseDto {
@@ -33,6 +32,12 @@ export class AuthorSummaryDto {
 
   @ApiProperty({ example: 'johndoe' })
   username: string;
+
+  @ApiProperty({ example: 'john' })
+  firstName: string;
+
+  @ApiProperty({ example: 'doe' })
+  lastName: string;
 
   @ApiProperty({ 
     example: 'https://res.cloudinary.com/.../avatar.jpg',
@@ -86,7 +91,7 @@ export class EchoResponseDto {
   @ApiProperty({ example: false })
   deleted: boolean;
 
-  // Static method to create from Prisma entity
+  //? Static method to create from Prisma entity
   static fromEntity(echo: any): EchoResponseDto {
     const dto = new EchoResponseDto();
     dto.id = echo.id;
@@ -95,7 +100,7 @@ export class EchoResponseDto {
     dto.updatedAt = echo.updatedAt;
     dto.deleted = echo.deleted;
     
-    // Transform media
+    //? Transform media
     dto.media = echo.media?.map(media => {
       const mediaDto = new MediaResponseDto();
       mediaDto.id = media.id;
@@ -109,17 +114,16 @@ export class EchoResponseDto {
       return mediaDto;
     }) || [];
 
-    // Transform author
+    //? Transform author
     if (echo.author) {
       dto.author = new AuthorSummaryDto();
       dto.author.id = echo.author.id;
       dto.author.username = echo.author.username;
+      dto.author.firstName = echo.author.firstName;
+      dto.author.lastName = echo.author.lastName;
       dto.author.avatar = echo.author.avatar;
     }
-
-    // Initialize counts (you can populate these from relations later)
     dto.counts = new EchoCountsDto();
-
     return dto;
   }
 }

@@ -186,7 +186,7 @@ model Echo {
   
   //TODO=> Enhanced indexes for engagement queries
   @@index([authorId, createdAt])
-  @@index([createdAt])
+  @@index([createdAt, id])
   @@index([deleted])
   @@index([authorId, deleted, createdAt]) 
 }
@@ -203,18 +203,12 @@ model Media {
   echo Echo @relation(fields: [echoId], references: [id], onDelete: Cascade)
   @@index([echoId])
 }
-//? Like type of the engagement
-enum TargetType {
-  ECHO 
-  RIPPLE
-}
 
 //TODO ==================== ENGAGEMENT MODELS ====================
 model Like {
   id        String   @id @default(cuid())
   userId    String
   echoId    String
-  targetType TargetType @default(ECHO) 
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

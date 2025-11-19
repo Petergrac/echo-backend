@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-// src/modules/auth/auth.controller.ts
-
 import {
   Controller,
   Post,

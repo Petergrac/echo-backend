@@ -54,6 +54,8 @@ export class UsersService {
       id: true,
       email: true,
       username: true,
+      firstName: true,
+      lastName: true,
       createdAt: true,
       bio: true,
       website: true,
@@ -141,7 +143,7 @@ export class UsersService {
     if (user.avatarPublicId) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        await this.cloudinary.deleteFile(user.avatarPublicId,'image');
+        await this.cloudinary.deleteFile(user.avatarPublicId, 'image');
       } catch (error) {
         console.error(
           'Failed to delete Cloudinary avatar:',

@@ -50,8 +50,8 @@ export class RippleRepository extends BaseRepository {
   }
   /**
    * TODO ====================== CREATE RIPPLE ======================
-   * @param createRippleDto 
-   * @returns 
+   * @param createRippleDto
+   * @returns
    */
   async createRipple(
     createRippleDto: CreateRippleDto,
@@ -108,11 +108,11 @@ export class RippleRepository extends BaseRepository {
   }
   /**
    *  TODO ====================== GET ALL RIPPLES OF A GIVEN ECHO ======================
-   * @param echoId 
-   * @param page 
-   * @param limit 
-   * @param includeReplies 
-   * @returns 
+   * @param echoId
+   * @param page
+   * @param limit
+   * @param includeReplies
+   * @returns
    */
   async getRipplesByEchoId(
     echoId: string,
@@ -142,18 +142,12 @@ export class RippleRepository extends BaseRepository {
     return { ripples, total };
   }
 
-  async getRippleThread(rippleId: string): Promise<RippleWithRelations | null> {
-    return this.prisma.ripple.findUnique({
-      where: { id: rippleId, deleted: false },
-      include: this.getRippleInclude(true),
-    });
-  }
   /**
    *  TODO ====================== EDIT A RIPPLE ======================
-   * @param rippleId 
-   * @param userId 
-   * @param content 
-   * @returns 
+   * @param rippleId
+   * @param userId
+   * @param content
+   * @returns
    */
   async updateRipple(
     rippleId: string,
@@ -173,19 +167,18 @@ export class RippleRepository extends BaseRepository {
         throw new ForbiddenException('You can only edit your own ripples');
       }
 
-      //* 1.Check edit window (15 minutes)
-      const editWindowMs = 15 * 60 * 1000;
+      //* 1.Check edit window (3 minutes)
+      const editWindowMs = 3 * 60 * 1000;
       const now = new Date();
       const timeSinceCreation = now.getTime() - ripple.createdAt.getTime();
       const timeSinceUpdate = now.getTime() - ripple.updatedAt.getTime();
 
       //* 2. If already updated, use the last update time to enforce edit window
-      if (timeSinceUpdate > editWindowMs || timeSinceCreation > editWindowMs) {
+      if (timeSinceUpdate < editWindowMs || timeSinceCreation < editWindowMs) {
         throw new ForbiddenException(
-          'Ripple can only be edited within 15 minutes of the last update',
+          'Ripple can only be edited within 3 minutes of the last update',
         );
       }
-
       return prisma.ripple.update({
         where: { id: rippleId },
         data: { content },
@@ -225,7 +218,7 @@ export class RippleRepository extends BaseRepository {
       });
     });
   }
-// TODO ====================== GET RIPPLE COUNT FOR A SPECIFIC ECHO (Top level ripples only) ======================
+  // TODO ====================== GET RIPPLE COUNT FOR A SPECIFIC ECHO (Top level ripples only) ======================
   async getRippleCount(echoId: string): Promise<number> {
     return this.prisma.ripple.count({
       where: {
@@ -242,6 +235,8 @@ export class RippleRepository extends BaseRepository {
         select: {
           id: true,
           username: true,
+          firstName: true,
+          lastName: true,
           avatar: true,
         },
       },
@@ -269,6 +264,8 @@ export class RippleRepository extends BaseRepository {
               select: {
                 id: true,
                 username: true,
+                firstName: true,
+                lastName: true,
                 avatar: true,
               },
             },

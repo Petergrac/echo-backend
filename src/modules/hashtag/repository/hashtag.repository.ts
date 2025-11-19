@@ -8,11 +8,13 @@ export class HashtagRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-    * TODO ====================== FIND OR CREATE HASHTAGS ======================
-    * @param hashtagNames 
-    * @returns //? Map of hashtag names to their database records
-    */
-  async findOrCreateHashtags(hashtagNames: string[]): Promise<Map<string, any>> {
+   * TODO ====================== FIND OR CREATE HASHTAGS ======================
+   * @param hashtagNames
+   * @returns //? Map of hashtag names to their database records
+   */
+  async findOrCreateHashtags(
+    hashtagNames: string[],
+  ): Promise<Map<string, any>> {
     if (hashtagNames.length === 0) {
       return new Map();
     }
@@ -20,8 +22,8 @@ export class HashtagRepository {
     try {
       //* 1.Normalize and validate all hashtags
       const normalizedHashtags = hashtagNames
-        .map(name => HashtagExtractor.normalizeHashtag(name))
-        .filter(name => HashtagExtractor.isValidHashtag(name));
+        .map((name) => HashtagExtractor.normalizeHashtag(name))
+        .filter((name) => HashtagExtractor.isValidHashtag(name));
 
       if (normalizedHashtags.length === 0) {
         return new Map();
@@ -33,24 +35,24 @@ export class HashtagRepository {
       });
 
       const existingMap = new Map(
-        existingHashtags.map(tag => [tag.name, tag])
+        existingHashtags.map((tag) => [tag.name, tag]),
       );
 
       //* 3.Identify new hashtags to create
       const newHashtagNames = normalizedHashtags.filter(
-        name => !existingMap.has(name)
+        (name) => !existingMap.has(name),
       );
 
       //* 4.Create new hashtags
       if (newHashtagNames.length > 0) {
-        const createPromises = newHashtagNames.map(name =>
+        const createPromises = newHashtagNames.map((name) =>
           this.prisma.hashtag.create({
             data: { name },
-          })
+          }),
         );
 
         const newHashtags = await Promise.all(createPromises);
-        newHashtags.forEach(tag => existingMap.set(tag.name, tag));
+        newHashtags.forEach((tag) => existingMap.set(tag.name, tag));
       }
 
       return existingMap;
@@ -60,19 +62,24 @@ export class HashtagRepository {
   }
 
   /**
-    * TODO ====================== LINK HASHTAGS TO ECHO ======================
-    * @param echoId 
-    * @param hashtagMap 
-    * @returns //? Create EchoHashtag relations
-    */
-  async linkHashtagsToEcho(echoId: string, hashtagMap: Map<string, any>): Promise<void> {
+   * TODO ====================== LINK HASHTAGS TO ECHO ======================
+   * @param echoId
+   * @param hashtagMap
+   * @returns //? Create EchoHashtag relations
+   */
+  async linkHashtagsToEcho(
+    echoId: string,
+    hashtagMap: Map<string, any>,
+  ): Promise<void> {
     if (hashtagMap.size === 0) return;
 
     try {
-      const echoHashtagData = Array.from(hashtagMap.values()).map(hashtag => ({
-        echoId,
-        hashtagId: hashtag.id,
-      }));
+      const echoHashtagData = Array.from(hashtagMap.values()).map(
+        (hashtag) => ({
+          echoId,
+          hashtagId: hashtag.id,
+        }),
+      );
 
       await this.prisma.echoHashtag.createMany({
         data: echoHashtagData,
@@ -84,16 +91,16 @@ export class HashtagRepository {
   }
 
   /**
-    * TODO ====================== GET ECHOES BY HASHTAG ======================
-    * @param hashtagName 
-    * @param page 
-    * @param limit 
-    * @returns //? Paginated echoes for a specific hashtag
-    */
+   * TODO ====================== GET ECHOES BY HASHTAG ======================
+   * @param hashtagName
+   * @param page
+   * @param limit
+   * @returns //? Paginated echoes for a specific hashtag
+   */
   async getEchoesByHashtag(
-    hashtagName: string, 
-    page: number = 1, 
-    limit: number = 20
+    hashtagName: string,
+    page: number = 1,
+    limit: number = 20,
   ) {
     try {
       const normalizedHashtag = HashtagExtractor.normalizeHashtag(hashtagName);
@@ -117,15 +124,9 @@ export class HashtagRepository {
               select: {
                 id: true,
                 username: true,
+                firstName: true,
+                lastName: true,
                 avatar: true,
-              },
-            },
-            _count: {
-              select: {
-                likes: true,
-                ripples: true,
-                reechoes: true,
-                bookmarks: true,
               },
             },
           },
@@ -161,16 +162,18 @@ export class HashtagRepository {
         },
       };
     } catch (error) {
-      throw new InternalServerErrorException('Failed to fetch echoes by hashtag');
+      throw new InternalServerErrorException(
+        'Failed to fetch echoes by hashtag',
+      );
     }
   }
 
   /**
-    * TODO ====================== GET TRENDING HASHTAGS ======================
-    * @param timeframe 
-    * @param limit 
-    * @returns //? Most popular hashtags based on recent usage
-    */
+   * TODO ====================== GET TRENDING HASHTAGS ======================
+   * @param timeframe
+   * @param limit
+   * @returns //? Most popular hashtags based on recent usage
+   */
   async getTrendingHashtags(timeframe: string = '7d', limit: number = 10) {
     try {
       //* Calculate time window
@@ -223,7 +226,7 @@ export class HashtagRepository {
       });
 
       //* Transform to include echo count and last used date
-      const transformed = trendingHashtags.map(hashtag => ({
+      const transformed = trendingHashtags.map((hashtag) => ({
         name: hashtag.name,
         echoCount: hashtag._count.echoHashtags,
         lastUsed: hashtag.updatedAt,
@@ -234,16 +237,18 @@ export class HashtagRepository {
         timeframe,
       };
     } catch (error) {
-      throw new InternalServerErrorException('Failed to fetch trending hashtags');
+      throw new InternalServerErrorException(
+        'Failed to fetch trending hashtags',
+      );
     }
   }
 
   /**
-    * TODO ====================== SEARCH HASHTAGS ======================
-    * @param query 
-    * @param limit 
-    * @returns //? Hashtag search with autocomplete functionality
-    */
+   * TODO ====================== SEARCH HASHTAGS ======================
+   * @param query
+   * @param limit
+   * @returns //? Hashtag search with autocomplete functionality
+   */
   async searchHashtags(query: string, limit: number = 10) {
     try {
       const normalizedQuery = HashtagExtractor.normalizeHashtag(query);
@@ -276,7 +281,7 @@ export class HashtagRepository {
         take: limit,
       });
 
-      return hashtags.map(hashtag => ({
+      return hashtags.map((hashtag) => ({
         name: hashtag.name,
         echoCount: hashtag._count.echoHashtags,
         lastUsed: hashtag.updatedAt,
@@ -286,51 +291,4 @@ export class HashtagRepository {
     }
   }
 
-  /**
-    * TODO ====================== GET HASHTAG STATS ======================
-    * @param hashtagName 
-    * @returns //? Detailed statistics for a specific hashtag
-    */
-  async getHashtagStats(hashtagName: string) {
-    try {
-      const normalizedHashtag = HashtagExtractor.normalizeHashtag(hashtagName);
-
-      const [hashtag, echoCount, recentEchoes] = await Promise.all([
-        this.prisma.hashtag.findUnique({
-          where: { name: normalizedHashtag },
-        }),
-        this.prisma.echoHashtag.count({
-          where: {
-            hashtag: { name: normalizedHashtag },
-            echo: { deleted: false },
-          },
-        }),
-        this.prisma.echo.count({
-          where: {
-            echoHashtags: {
-              some: {
-                hashtag: { name: normalizedHashtag },
-              },
-            },
-            deleted: false,
-            createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-          },
-        }),
-      ]);
-
-      if (!hashtag) {
-        return null;
-      }
-
-      return {
-        name: hashtag.name,
-        totalEchoes: echoCount,
-        recentEchoes,
-        createdAt: hashtag.createdAt,
-        lastUsed: hashtag.updatedAt,
-      };
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to fetch hashtag stats');
-    }
-  }
 }
