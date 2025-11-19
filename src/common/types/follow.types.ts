@@ -1,4 +1,3 @@
-// types/follow.types.ts
 export interface FollowUser {
   id: string;
   username: string;
