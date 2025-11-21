@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/services/prisma.service';
-import {
-  FollowUser,
-  PaginatedResponse,
-} from '../../../common/types/follow.types';
 
 @Injectable()
 export class FollowRepository {
@@ -23,10 +19,7 @@ export class FollowRepository {
     });
   }
   //TODO Create new follow relationship
-  async createFollow(
-    followerId: string,
-    followingId: string,
-  ): Promise<{ following: FollowUser }> {
+  async createFollow(followerId: string, followingId: string) {
     const result = await this.prisma.follow.create({
       data: {
         followerId,
@@ -37,6 +30,8 @@ export class FollowRepository {
           select: {
             id: true,
             username: true,
+            firstName: true,
+            lastName: true,
             email: true,
             avatar: true,
           },
@@ -57,11 +52,7 @@ export class FollowRepository {
   }
 
   //TODO Get paginated followers
-  async getFollowers(
-    userId: string,
-    page: number,
-    limit: number,
-  ): Promise<PaginatedResponse<FollowUser>> {
+  async getFollowers(userId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
 
     const [follows, total] = await Promise.all([
@@ -74,6 +65,8 @@ export class FollowRepository {
             select: {
               id: true,
               username: true,
+              firstName: true,
+              lastName: true,
               email: true,
             },
           },
@@ -106,11 +99,7 @@ export class FollowRepository {
   }
 
   // Get paginated following
-  async getFollowing(
-    userId: string,
-    page: number,
-    limit: number,
-  ): Promise<PaginatedResponse<FollowUser>> {
+  async getFollowing(userId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
 
     const [follows, total] = await Promise.all([
@@ -123,6 +112,8 @@ export class FollowRepository {
             select: {
               id: true,
               username: true,
+              firstName: true,
+              lastName: true,
               email: true,
             },
           },

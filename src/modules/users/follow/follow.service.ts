@@ -2,19 +2,13 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import {
-  FollowUser,
-  PaginatedResponse,
-  ToggleFollowResponse,
-} from '../../../common/types/follow.types';
 import { FollowRepository } from '../repository/follow.repository';
-import { NotificationService } from '../../notification/notifications.service';
+import { UserListResponseDto } from './dto/user-list-response.dto';
 
 @Injectable()
 export class FollowService {
   constructor(
     private readonly followRepository: FollowRepository,
-    private readonly notificationService: NotificationService,
   ) {}
   /**
    * TODO ------===================== TOGGLE FOLLOW ===========
@@ -26,7 +20,7 @@ export class FollowService {
   async toggleFollow(
     targetUserId: string,
     currentUserId: string,
-  ): Promise<ToggleFollowResponse> {
+  ) {
     //* 1. Prevent self-follow
     if (targetUserId === currentUserId) {
       throw new ForbiddenException('You cannot follow yourself');
@@ -47,12 +41,6 @@ export class FollowService {
         currentUserId,
         targetUserId,
       );
-      //* 4. Create follow notification
-      await this.notificationService.createNotification({
-        fromUserId: currentUserId,
-        targetUserId,
-        type: 'FOLLOW',
-      });
       return { action: 'followed', following: result.following };
     }
   }
@@ -67,7 +55,7 @@ export class FollowService {
     userId: string,
     page: number = 1,
     limit: number = 10,
-  ): Promise<PaginatedResponse<FollowUser>> {
+  ): Promise<UserListResponseDto> {
     //* 1. Validate pagination parameters
     const validPage = Math.max(1, page);
     const validLimit = Math.max(1, Math.min(limit, 100)); //? Cap at 100 per page
@@ -89,7 +77,7 @@ export class FollowService {
     userId: string,
     page: number = 1,
     limit: number = 10,
-  ): Promise<PaginatedResponse<FollowUser>> {
+  ): Promise<UserListResponseDto> {
     //* 1. Validate pagination parameters
     const validPage = Math.max(1, page);
     const validLimit = Math.max(1, Math.min(limit, 100));

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   Inject,
@@ -101,11 +100,22 @@ export class CloudinaryService {
         },
         (error: any, result: CloudinaryDeleteResponse) => {
           if (error) {
-            reject(`Cloudinary deletion failed: ${error.message}`);
+            reject(
+              new InternalServerErrorException(
+                'Failed to delete the file from cloudinary',
+              ),
+            );
             return;
           }
+          if (result.result === 'already deleted') {
+            resolve(result);
+          }
           if (result.result !== 'ok') {
-            reject(`Failed to delete the file: ${result.result}`);
+            reject(
+              new InternalServerErrorException(
+                'Failed to delete file from cloudinary',
+              ),
+            );
             return;
           }
           resolve(result);
@@ -129,7 +139,11 @@ export class CloudinaryService {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
-    return new Promise((resolve, reject) => {
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('File too large for Cloudinary');
+    }
+
+    return new Promise<UploadApiResponse>((resolve, reject) => {
       this.cloudinary.uploader
         .upload_stream(
           {
@@ -142,11 +156,19 @@ export class CloudinaryService {
                 `Cloudinary upload failed: ${error.message}`,
               );
               (err as any).http_code = error.http_code;
-              reject(err);
+              reject(
+                new BadRequestException(
+                  'Cloudinary upload failed: No response from server',
+                ),
+              );
               return;
             }
             if (!result) {
-              reject(new Error('Cloudinary upload failed: No result returned'));
+              reject(
+                new BadRequestException(
+                  'Cloudinary upload failed: No response from server',
+                ),
+              );
               return;
             }
             resolve(result);

@@ -1,4 +1,3 @@
-// pipes/file-validation.pipe.ts
 import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
 
 interface FileValidationOptions {

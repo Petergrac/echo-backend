@@ -7,6 +7,7 @@ import { EchoModule } from './modules/echo/echo.module';
 import { HealthController } from './common/controllers/healthcare.controller';
 import { CustomArcjetGuard } from './common/guards/arcjet.guard';
 import { CommonModule } from './common/module/common.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { CommonModule } from './common/module/common.module';
         }),
       ],
     }),
+    ScheduleModule.forRoot(),
     CommonModule,
     AuthModule,
     UsersModule,

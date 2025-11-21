@@ -59,7 +59,14 @@ export class AuthController {
     //* Return access token + user info
     return {
       accessToken,
-      user: { id: user.id, email: user.email, username: user.username },
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        bio: user.bio,
+        username: user.username,
+      },
     };
   }
 
@@ -100,7 +107,15 @@ export class AuthController {
 
     return {
       accessToken,
-      user: { id: user.id, email: user.email, username: user.username },
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        bio: user.bio,
+        avatar: user.avatar,
+        email: user.email,
+        username: user.username,
+      },
     };
   }
 
