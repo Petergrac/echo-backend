@@ -22,7 +22,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     //* 1.If it's already an HttpException with a structured response, let it through
     if (exception instanceof HttpException) {
       const errorResponse = exception.getResponse();
-      
+
       //* 2.For Arcjet errors, they're already formatted by the guard - just add timestamp/path
       if (typeof errorResponse === 'object' && errorResponse !== null) {
         return response.status(status).json({
@@ -31,7 +31,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           path: request.url,
         });
       }
-      
+
       //* 3.For other HttpExceptions
       return response.status(status).json({
         timestamp: new Date().toISOString(),

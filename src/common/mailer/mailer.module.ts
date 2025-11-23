@@ -1,4 +1,3 @@
-// src/common/mailer/app-mailer.module.ts
 import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -25,7 +24,7 @@ import { MailService } from './mail.service';
         },
         template: {
           dir: join(__dirname, 'templates'),
-          adapter: new HandlebarsAdapter(), // or EJS/Pug if you prefer
+          adapter: new HandlebarsAdapter(),
           options: { strict: true },
         },
       }),

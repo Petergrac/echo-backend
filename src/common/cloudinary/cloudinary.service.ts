@@ -68,13 +68,16 @@ export class CloudinaryService {
               const err = new InternalServerErrorException(
                 `Cloudinary upload failed: ${error.message}`,
               );
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               (err as any).http_code = error.http_code;
               reject(err);
               return;
             }
             if (!result) {
-              reject('Cloudinary upload failed: No result returned');
+              reject(
+                new InternalServerErrorException(
+                  'Cloudinary upload failed: No result returned',
+                ),
+              );
               return;
             }
             resolve(result);
@@ -124,7 +127,7 @@ export class CloudinaryService {
     });
   }
 
-  // Helper method to extract public_id from Cloudinary URL
+  //* Helper method to extract public_id from Cloudinary URL
   extractPublicId(imageUrl: string): string {
     const matches = imageUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.\w+$/);
     return matches ? matches[1] : imageUrl;

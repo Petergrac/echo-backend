@@ -1,12 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ArcjetModule, detectBot, fixedWindow, shield } from '@arcjet/nest';
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
-import { EchoModule } from './modules/echo/echo.module';
-import { HealthController } from './common/controllers/healthcare.controller';
-import { CustomArcjetGuard } from './common/guards/arcjet.guard';
-import { CommonModule } from './common/module/common.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -34,17 +28,8 @@ import { ScheduleModule } from '@nestjs/schedule';
       ],
     }),
     ScheduleModule.forRoot(),
-    CommonModule,
-    AuthModule,
-    UsersModule,
-    EchoModule,
   ],
-  controllers: [HealthController],
-  providers: [
-    {
-      provide: 'APP_GUARD',
-      useClass: CustomArcjetGuard,
-    },
-  ],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
