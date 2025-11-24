@@ -20,5 +20,7 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
-  }
+  },
+  "include": ["src/**/*", "src/common/mailer/templates/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.js"]
 }

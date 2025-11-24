@@ -2,11 +2,27 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ArcjetModule, detectBot, fixedWindow, shield } from '@arcjet/nest';
 import { ScheduleModule } from '@nestjs/schedule';
+import { CommonModule } from './common/module/common.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { PostsModule } from './modules/posts/posts.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { CoreEntity } from './common/entities/common.entity';
+import { HealthController } from './common/controllers/healthcare.controller';
+import { CustomArcjetGuard } from './common/guards/arcjet.guard';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      url: process.env.DATABASE_URL,
+      entities: [CoreEntity],
+      autoLoadEntities: true,
+      synchronize: true,
+      logging: true,
+      migrations: ['src/migrations/*.ts'],
     }),
     ArcjetModule.forRoot({
       isGlobal: true,
@@ -28,8 +44,16 @@ import { ScheduleModule } from '@nestjs/schedule';
       ],
     }),
     ScheduleModule.forRoot(),
+    CommonModule,
+    AuthModule,
+    PostsModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [HealthController],
+  providers: [
+    {
+      provide: 'APP_GUARD',
+      useClass: CustomArcjetGuard,
+    },
+  ],
 })
 export class AppModule {}

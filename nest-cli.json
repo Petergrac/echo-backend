@@ -6,9 +6,10 @@
     "deleteOutDir": true,
     "assets": [
       {
-        "include": "src/common/mailer/**/*",
-        "watchAssets": true
+        "include": "common/mailer/templates/**/*",
+        "outDir": "dist"
       }
-    ]
+    ],
+    "watchAssets": true
   }
 }

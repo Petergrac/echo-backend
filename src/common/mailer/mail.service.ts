@@ -1,4 +1,3 @@
-// src/common/mailer/mail.service.ts
 import { Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
@@ -13,6 +12,12 @@ export class MailService {
     private readonly config: ConfigService,
   ) {}
 
+  /**
+   * TODO ================== SEND VERIFICATION EMAIL =========================
+   * @param to
+   * @param token
+   * @param username
+   */
   async sendVerificationEmail(
     to: string,
     token: string,
@@ -25,7 +30,7 @@ export class MailService {
     await this.mailer.sendMail({
       to,
       subject: 'Verify your Echo account',
-      template: './verify-email',
+      template: './verify-email.hbs',
       context: {
         name: username ?? 'there',
         action_url: url,
@@ -35,13 +40,15 @@ export class MailService {
       },
     });
   }
+
+  /**
+   * TODO ============================= SEND PASSWORD RESET EMAIL =======================
+   * @param email
+   * @param resetToken
+   */
   async sendPasswordResetEmail(email: string, resetToken: string) {
     //TODO: Load the HTML template
-    const templatePath = path.join(
-      __dirname,
-      'templates',
-      'reset-password.hbs',
-    );
+    const templatePath = path.join(__dirname, 'templates/reset-password.hbs');
     const source = fs.readFileSync(templatePath, 'utf-8');
 
     //TODO Compile the handlebars template
