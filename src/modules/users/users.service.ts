@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,6 +13,8 @@ import { AuditLogService } from '../../common/services/audit.service';
 import { AuditAction, AuditResource } from '../../common/enums/audit.enums';
 import { User } from '../auth/entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class UsersService {
@@ -19,6 +22,7 @@ export class UsersService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     private readonly cloudinary: CloudinaryService,
     private readonly auditService: AuditLogService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
   /**
    * TODO ==================== GET LOGGED USER PROFILE ============
@@ -28,6 +32,11 @@ export class UsersService {
    * @returns
    */
   async getMe(userId: string, ip?: string, userAgent?: string) {
+    //* 0.Check if the username is in the cache
+    const cacheKey = `user_id:${userId}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    //* If so return it
+    if (cached) return cached;
     //* 1.Perform read operation on the database
     try {
       const user = await this.userRepo.findOneBy({
@@ -45,6 +54,8 @@ export class UsersService {
       const transformUser = plainToInstance(UserResponseDto, user, {
         excludeExtraneousValues: true,
       });
+      // * 3. Cache the transformed User
+      await this.cacheManager.set(cacheKey, transformUser, 300_000);
       return transformUser;
     } catch (error) {
       console.log(error);
@@ -59,6 +70,10 @@ export class UsersService {
    * @returns
    */
   async getUserProfile(username: string, ip?: string, userAgent?: string) {
+    //* 0. Check the cache first and if is a hit, return it
+    const cacheKey = `user_profile:${username}`;
+    const cache = await this.cacheManager.get(cacheKey);
+    if (cache) return cache;
     try {
       //* 1.Fetch user by name
       const user = await this.userRepo.findOneBy({
@@ -73,10 +88,13 @@ export class UsersService {
         ip,
         userAgent,
       });
-      //* Transform and return the user
-      return plainToInstance(UserResponseDto, user, {
+      //* 3.Transform and return the user
+      const transformedUser = plainToInstance(UserResponseDto, user, {
         excludeExtraneousValues: true,
       });
+      //* 4.Cache the transformed user
+      await this.cacheManager.set(cacheKey, transformedUser, 300_000); //? 5 minutes
+      return transformedUser;
     } catch (error) {
       console.log(error);
       throw error;
@@ -149,7 +167,14 @@ export class UsersService {
       });
       //* 5. Fetch the user
       const updatedUser = await this.userRepo.findOneBy({ id: userId });
-      //* 5. Log the action
+
+      //todo=> 6.Invalidate the cache
+      if (updatedUser) {
+        await this.cacheManager.del(`user_profile:${updatedUser.username}`);
+        await this.cacheManager.del(`user_id:${updatedUser.id}`);
+      }
+
+      //* 7. Log the action
       await this.auditService.createLog({
         action: AuditAction.USER_UPDATED,
         resource: AuditResource.USER,

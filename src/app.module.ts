@@ -9,6 +9,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { HealthController } from './common/controllers/healthcare.controller';
 import { CustomArcjetGuard } from './common/guards/arcjet.guard';
 import { UsersModule } from './modules/users/users.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import KeyvRedis from '@keyv/redis';
+import { CacheModule } from '@nestjs/cache-manager';
+import { Keyv } from 'keyv';
+import { CacheableMemory } from 'cacheable';
 
 @Module({
   imports: [
@@ -19,9 +24,10 @@ import { UsersModule } from './modules/users/users.module';
       type: 'postgres',
       url: process.env.DATABASE_URL,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
-      logging: true,
+      synchronize: process.env.NODE_ENV === 'development',
+      logging: process.env.NODE_ENV === 'development',
       migrations: ['src/migrations/*.ts'],
+      migrationsRun: process.env.NODE_ENV === 'production',
     }),
     ArcjetModule.forRoot({
       isGlobal: true,
@@ -37,10 +43,33 @@ import { UsersModule } from './modules/users/users.module';
         }),
         fixedWindow({
           mode: 'LIVE',
-          window: '60s', // 10 second fixed window
-          max: 5, // Allow a maximum of 2 requests
+          window: '60s', //* 10 second fixed window
+          max: 10, //* Allow a maximum of 7 requests
         }),
       ],
+    }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 6000,
+          limit: 10,
+        },
+      ],
+    }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: () => {
+        return {
+          //* Using multiple stores
+          stores: [
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            new Keyv({
+              store: new CacheableMemory({ ttl: 60000, lruSize: 5000 }),
+            }),
+            new KeyvRedis('redis://localhost:6379'),
+          ],
+        };
+      },
     }),
     ScheduleModule.forRoot(),
     CommonModule,
@@ -53,6 +82,10 @@ import { UsersModule } from './modules/users/users.module';
     {
       provide: 'APP_GUARD',
       useClass: CustomArcjetGuard,
+    },
+    {
+      provide: 'APP_GUARD',
+      useClass: ThrottlerGuard,
     },
   ],
 })

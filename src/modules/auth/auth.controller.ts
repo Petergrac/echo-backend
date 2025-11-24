@@ -20,6 +20,7 @@ import {
   RequestPasswordResetDto,
   ResetPasswordDto,
 } from './dto/update-user.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -63,6 +64,7 @@ export class AuthController {
    * TODO ======================= LOGIN ==========================
    * //* Verify credentials and return access + refresh tokens
    */
+  @Throttle({ default: { ttl: 6000, limit: 3 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(

@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileValidationPipe } from '../../common/pipes/file-validation.pipe';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -40,6 +41,7 @@ export class UsersController {
    * @param req
    * @returns
    */
+  @Throttle({ default: { limit: 100, ttl: 60000 } }) //? 100 request per minute
   @Get(':username')
   async getUserProfile(
     @Param('username') username: string,

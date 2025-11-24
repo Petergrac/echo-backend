@@ -2,6 +2,7 @@ import { Column, Entity, OneToMany } from 'typeorm';
 import { CoreEntity } from '../../../common/entities/common.entity';
 import { EmailToken } from './email-token.entity';
 import { RefreshToken } from './refresh-token.entity';
+import { Follow } from '../../users/follow/entities/follow.entity';
 
 export enum UserRole {
   USER = 'user',
@@ -49,6 +50,9 @@ export class User extends CoreEntity {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
+  /**
+   * TODO ================ RELATIONS =======
+   */
   @OneToMany(() => RefreshToken, (t) => t.user, {
     cascade: ['soft-remove', 'recover'],
   })
@@ -58,4 +62,10 @@ export class User extends CoreEntity {
     cascade: ['soft-remove', 'recover'],
   })
   emailTokens: EmailToken[];
+
+  @OneToMany(() => Follow, (follow) => follow.follower)
+  followers: Follow[];
+
+  @OneToMany(() => Follow, (follow) => follow.following)
+  following: Follow[];
 }
