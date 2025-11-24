@@ -37,6 +37,9 @@ export class User extends CoreEntity {
   @Column({ nullable: true })
   location?: string;
 
+  @Column({ nullable: true })
+  resourceType: string;
+
   @Column()
   passwordHash: string;
 
@@ -46,9 +49,13 @@ export class User extends CoreEntity {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  @OneToMany(() => RefreshToken, (t) => t.user, { cascade: true })
+  @OneToMany(() => RefreshToken, (t) => t.user, {
+    cascade: ['soft-remove', 'recover'],
+  })
   refreshTokens: RefreshToken[];
 
-  @OneToMany(() => EmailToken, (e) => e.user, { cascade: true })
+  @OneToMany(() => EmailToken, (e) => e.user, {
+    cascade: ['soft-remove', 'recover'],
+  })
   emailTokens: EmailToken[];
 }

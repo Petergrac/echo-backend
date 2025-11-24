@@ -1,10 +1,4 @@
-import { OmitType, PartialType } from '@nestjs/swagger';
-import { CreateUserDto } from './create-user.dto';
 import { IsEmail, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
-
-export class UpdateUserDto extends PartialType(
-  OmitType(CreateUserDto, ['password'] as const),
-) {}
 
 // TODO =============== PASSWORD RESET DTO ===================
 export class ResetPasswordDto {

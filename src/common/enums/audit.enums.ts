@@ -17,6 +17,7 @@ export enum AuditAction {
   //* User
   USER_UPDATED = 'USER_UPDATED',
   USER_DELETED = 'USER_DELETED',
+  PROFILE_VIEWED = 'PROFILE_VIEWED',
 
   //TODO Content (future social features)
   POST_CREATED = 'POST_CREATED',

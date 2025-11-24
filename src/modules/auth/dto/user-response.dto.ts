@@ -32,6 +32,9 @@ export class UserResponseDto {
   emailVerified: boolean;
 
   @Expose()
+  resourceType: string;
+
+  @Expose()
   createdAt: Date;
 
   @Expose()

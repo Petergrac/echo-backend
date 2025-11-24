@@ -6,9 +6,9 @@ import { CommonModule } from './common/module/common.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CoreEntity } from './common/entities/common.entity';
 import { HealthController } from './common/controllers/healthcare.controller';
 import { CustomArcjetGuard } from './common/guards/arcjet.guard';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -18,8 +18,7 @@ import { CustomArcjetGuard } from './common/guards/arcjet.guard';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      entities: [CoreEntity],
-      autoLoadEntities: true,
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
       logging: true,
       migrations: ['src/migrations/*.ts'],
@@ -47,6 +46,7 @@ import { CustomArcjetGuard } from './common/guards/arcjet.guard';
     CommonModule,
     AuthModule,
     PostsModule,
+    UsersModule,
   ],
   controllers: [HealthController],
   providers: [

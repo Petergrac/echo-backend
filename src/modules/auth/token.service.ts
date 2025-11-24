@@ -113,14 +113,12 @@ export class TokenService {
     const ok = await argon2
       .verify(candidate.hashedToken, plain)
       .catch(() => false);
-
     //* 3. If reused(crucial for logout) or expired -> revoke and audit
     if (!ok || candidate.expiresAt < new Date() || candidate.revoked) {
       await this.refreshTokenRepo.update(
         { user: { id: candidate.user.id }, revoked: false },
         { revoked: true },
       );
-
       //? audit it
       await this.auditService.createLog({
         action: AuditAction.REUSED_REFRESH_TOKEN,
@@ -137,7 +135,14 @@ export class TokenService {
       { id: candidate.id },
       { revoked: true, lastUsedAt: new Date() },
     );
-
+    //* Audit the token rotation
+    await this.auditService.createLog({
+      action: AuditAction.REFRESH_TOKEN_ROTATED,
+      resource: AuditResource.AUTH,
+      ip,
+      userAgent,
+      userId: candidate.user.id,
+    });
     //* 5. Create new token and return compound
     const newCompound = await this.createRefreshToken(
       candidate.user.id,
