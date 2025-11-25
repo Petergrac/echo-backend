@@ -16,6 +16,9 @@ export class EmailToken extends CoreEntity {
   @Column({ default: false })
   used: boolean;
 
+  /**
+   * TODO ================ RELATIONS =======
+   */
   @ManyToOne(() => User, (user) => user.emailTokens, {
     onDelete: 'CASCADE',
   })

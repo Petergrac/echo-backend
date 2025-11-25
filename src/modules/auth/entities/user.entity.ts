@@ -3,6 +3,11 @@ import { CoreEntity } from '../../../common/entities/common.entity';
 import { EmailToken } from './email-token.entity';
 import { RefreshToken } from './refresh-token.entity';
 import { Follow } from '../../users/follow/entities/follow.entity';
+import { Post } from '../../posts/entities/post.entity';
+import { Like } from '../../posts/entities/post-like.entity';
+import { Bookmark } from '../../posts/entities/bookmark.entity';
+import { Reply } from '../../posts/entities/reply.entity';
+import { Repost } from '../../posts/entities/repost.entity';
 
 export enum UserRole {
   USER = 'user',
@@ -68,4 +73,19 @@ export class User extends CoreEntity {
 
   @OneToMany(() => Follow, (follow) => follow.following)
   following: Follow[];
+
+  @OneToMany(() => Post, (post) => post.author)
+  posts: Post[];
+
+  @OneToMany(() => Like, (like) => like.user)
+  likes: Like[];
+
+  @OneToMany(() => Bookmark, (bookmark) => bookmark.user)
+  bookmarks: Bookmark[];
+
+  @OneToMany(() => Reply, (reply) => reply.author)
+  replies: Reply[];
+
+  @OneToMany(() => Repost, (repost) => repost.user)
+  reposts: Repost[];
 }

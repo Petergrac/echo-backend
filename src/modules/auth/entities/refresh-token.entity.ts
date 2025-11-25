@@ -25,6 +25,9 @@ export class RefreshToken extends CoreEntity {
   @Column({ nullable: true })
   userAgent?: string;
 
+  /**
+   * TODO ================ RELATIONS =======
+   */
   @ManyToOne(() => User, (user) => user.refreshTokens, { onDelete: 'CASCADE' })
   user: User;
 }
