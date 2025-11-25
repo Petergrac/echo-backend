@@ -15,6 +15,8 @@ import { User } from '../../auth/entities/user.entity';
 import { AuditAction, AuditResource } from '../../../common/enums/audit.enums';
 import { plainToInstance } from 'class-transformer';
 import { PostResponseDto } from '../dto/post-response.dto';
+import { HashtagService } from './hashtag.service';
+import { MentionService } from './mention.service';
 
 @Injectable()
 export class PostsService {
@@ -25,6 +27,8 @@ export class PostsService {
     private readonly auditService: AuditLogService,
     private readonly cloudinary: CloudinaryService,
     private readonly dataSource: DataSource,
+    private readonly hashTagService: HashtagService,
+    private readonly mentionService: MentionService,
   ) {}
 
   //TODO ==================== CREATE POST ====================
@@ -67,6 +71,17 @@ export class PostsService {
         author: { id: userId },
         mediaCount: uploadedResponse.length,
       });
+      //* <<<<<<<<<<<< EXTRACT MENTION & HASHTAG >>>>>>>>>>>>>>>>>>>>>>>
+      const hashtags = this.hashTagService.extractHashtags(cdto.content);
+      const mentions = this.mentionService.extractMentions(cdto.content);
+      //*<><><><> Save hashtags and mentions
+      if (hashtags.length > 0) {
+        await this.hashTagService.createHashtags(hashtags, post.id);
+      }
+
+      if (mentions.length > 0) {
+        await this.mentionService.createMentions(mentions, post.id, userId);
+      }
 
       const savedPost = await queryRunner.manager.save(Post, post);
 
@@ -197,6 +212,21 @@ export class PostsService {
         mediaCount: files ? mediaUpdates.length : post.mediaCount,
       });
 
+      //* 3.1. Extract new hashtags and mentions if content changed
+      if (udto.content) {
+        const newHashtags = this.hashTagService.extractHashtags(udto.content);
+        const newMentions = this.mentionService.extractMentions(udto.content);
+
+        //* 3.2. Update hashtags (delete old, create new)
+        if (newHashtags.length > 0) {
+          await this.hashTagService.createHashtags(newHashtags, postId);
+        }
+
+        //* 3.3. Update mentions (delete old, create new)
+        if (newMentions.length > 0) {
+          await this.mentionService.createMentions(newMentions, postId, userId);
+        }
+      }
       await queryRunner.commitTransaction();
 
       //* 4. Audit log
@@ -321,7 +351,10 @@ export class PostsService {
     });
 
     return {
-      posts,
+      posts: plainToInstance(PostResponseDto, posts, {
+        excludeExtraneousValues: true,
+        exposeUnsetFields: false,
+      }),
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -360,7 +393,10 @@ export class PostsService {
       .getManyAndCount();
 
     return {
-      posts,
+      posts: plainToInstance(PostResponseDto, posts, {
+        excludeExtraneousValues: true,
+        exposeUnsetFields: false,
+      }),
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),

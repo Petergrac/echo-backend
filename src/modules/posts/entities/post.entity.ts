@@ -6,6 +6,8 @@ import { Bookmark } from './bookmark.entity';
 import { Reply } from './reply.entity';
 import { Repost } from './repost.entity';
 import { Media } from './media.entity';
+import { Hashtag } from './hashtag.entity';
+import { Mention } from './mention.entity';
 
 export enum PostVisibility {
   PUBLIC = 'public',
@@ -64,6 +66,15 @@ export class Post extends CoreEntity {
   @OneToMany(() => Media, (media) => media.post)
   media: Media[];
 
+  @OneToMany(() => Hashtag, (hashtag) => hashtag.postHashtags)
+  postHashtags: Hashtag[];
+
+  @OneToMany(() => Mention, (mention) => mention.post)
+  mentions: Mention[];
+
   @ManyToOne(() => User, (user) => user.posts, { onDelete: 'CASCADE' })
   author: User;
+
+  //TODO ======> VIRTUAL FIELDS <==========
+  hashtags?: string[];
 }

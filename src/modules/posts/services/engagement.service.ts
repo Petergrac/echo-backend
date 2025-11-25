@@ -12,7 +12,6 @@ import { Reply } from '../entities/reply.entity';
 import { Repost } from '../entities/repost.entity';
 import { Post } from '../entities/post.entity';
 import { Media } from '../entities/media.entity';
-import { User } from '../../auth/entities/user.entity';
 import { CreateReplyDto } from '../dto/create-reply.dto';
 import { CreateRepostDto } from '../dto/create-repost.dto';
 import { Like } from '../entities/post-like.entity';
@@ -21,11 +20,12 @@ import { plainToInstance } from 'class-transformer';
 import { PostResponseDto } from '../dto/post-response.dto';
 import { UserResponseDto } from '../../auth/dto/user-response.dto';
 import { ReplyResponseDto } from '../dto/reply-response.dto';
+import { MentionService } from './mention.service';
 
 @Injectable()
 export class EngagementService {
   constructor(
-    // Repositories
+    //* Repositories
     @InjectRepository(Like) private readonly likeRepo: Repository<Like>,
     @InjectRepository(Bookmark)
     private readonly bookmarkRepo: Repository<Bookmark>,
@@ -33,12 +33,12 @@ export class EngagementService {
     @InjectRepository(Repost) private readonly repostRepo: Repository<Repost>,
     @InjectRepository(Post) private readonly postRepo: Repository<Post>,
     @InjectRepository(Media) private readonly mediaRepo: Repository<Media>,
-    @InjectRepository(User) private readonly userRepo: Repository<User>,
 
     //* Services
     private readonly auditService: AuditLogService,
     private readonly cloudinary: CloudinaryService,
     private readonly dataSource: DataSource,
+    private readonly mentionService: MentionService,
   ) {}
 
   //TODO ==================== TOGGLE LIKE ====================
@@ -342,6 +342,19 @@ export class EngagementService {
       });
 
       const savedReply = await queryRunner.manager.save(Reply, reply);
+      //* Extract and save the mentions if available
+      const mentions = this.mentionService.extractMentions(
+        createReplyDto.content,
+      );
+
+      if (mentions.length > 0) {
+        await this.mentionService.createMentions(
+          mentions,
+          postId,
+          userId,
+          savedReply.id,
+        );
+      }
 
       //* 5. Save media if files exist
       if (uploadedResponse.length > 0) {

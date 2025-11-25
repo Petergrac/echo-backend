@@ -8,6 +8,7 @@ import { Like } from '../../posts/entities/post-like.entity';
 import { Bookmark } from '../../posts/entities/bookmark.entity';
 import { Reply } from '../../posts/entities/reply.entity';
 import { Repost } from '../../posts/entities/repost.entity';
+import { Mention } from '../../posts/entities/mention.entity';
 
 export enum UserRole {
   USER = 'user',
@@ -88,4 +89,7 @@ export class User extends CoreEntity {
 
   @OneToMany(() => Repost, (repost) => repost.user)
   reposts: Repost[];
+
+  @OneToMany(() => Mention, (mention) => mention.mentionedUser)
+  mentions: Mention[];
 }

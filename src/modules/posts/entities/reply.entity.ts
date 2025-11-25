@@ -3,7 +3,7 @@ import { User } from '../../auth/entities/user.entity';
 import { Post } from './post.entity';
 import { Media } from './media.entity';
 import { CoreEntity } from '../../../common/entities/common.entity';
-import { RLike } from './reply-like.entity';
+import { Mention } from './mention.entity';
 
 @Entity()
 @Index(['post', 'createdAt']) //? For post replies sorting
@@ -33,8 +33,8 @@ export class Reply extends CoreEntity {
   @OneToMany(() => Reply, (reply) => reply.parentReply)
   replies: Reply[];
 
-  @OneToMany(() => RLike, (like) => like.reply)
-  likes: RLike[];
+  @OneToMany(() => Mention, (mention) => mention.reply)
+  mentions: Mention[];
 
   @ManyToOne(() => Post, (post) => post.replies, { onDelete: 'CASCADE' })
   post: Post;
