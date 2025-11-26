@@ -19,10 +19,13 @@ import { MentionService } from './services/mention.service';
 import { FeedService } from './services/feed.service';
 import { HashtagController } from './controllers/hashtag.controller';
 import { MentionController } from './controllers/mention.controller';
+import { DeleteOrphanedHashTagsTask } from '../../common/tasks/cleanup.task';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     CloudinaryModule,
+    NotificationsModule,
     TypeOrmModule.forFeature([
       Post,
       Like,
@@ -48,6 +51,7 @@ import { MentionController } from './controllers/mention.controller';
     HashtagService,
     MentionService,
     FeedService,
+    DeleteOrphanedHashTagsTask,
   ],
 })
 export class PostsModule {}

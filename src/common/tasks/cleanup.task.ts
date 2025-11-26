@@ -1,10 +1,11 @@
-// src/common/tasks/cleanup.task.ts
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../../modules/auth/entities/user.entity';
 import { Repository } from 'typeorm';
+import { HashtagService } from '../../modules/posts/services/hashtag.service';
 
+//TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DELETE OLD ACCOUNTS FROM THE DATABASE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 @Injectable()
 export class CleanupOldAccountsTask {
   private readonly logger = new Logger(CleanupOldAccountsTask.name);
@@ -35,5 +36,16 @@ export class CleanupOldAccountsTask {
       .execute();
 
     this.logger.log(`Permanently deleted ${result.affected} old accounts`);
+  }
+}
+
+//TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DELETE ORPHANED HASHTAGS >>>>>>>>>>>>>>>>>>
+@Injectable()
+export class DeleteOrphanedHashTagsTask {
+  constructor(private readonly hashTagService: HashtagService) {}
+
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async cleanUnusedTags() {
+    await this.hashTagService.cleanupOrphanedHashtags();
   }
 }
