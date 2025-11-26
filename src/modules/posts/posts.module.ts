@@ -17,6 +17,8 @@ import { Mention } from './entities/mention.entity';
 import { HashtagService } from './services/hashtag.service';
 import { MentionService } from './services/mention.service';
 import { FeedService } from './services/feed.service';
+import { HashtagController } from './controllers/hashtag.controller';
+import { MentionController } from './controllers/mention.controller';
 
 @Module({
   imports: [
@@ -34,7 +36,12 @@ import { FeedService } from './services/feed.service';
       Repost,
     ]),
   ],
-  controllers: [PostsController, EngagementController],
+  controllers: [
+    PostsController,
+    EngagementController,
+    HashtagController,
+    MentionController,
+  ],
   providers: [
     PostsService,
     EngagementService,

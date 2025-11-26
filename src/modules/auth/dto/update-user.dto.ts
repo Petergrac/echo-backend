@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 // TODO =============== PASSWORD RESET DTO ===================
 export class ResetPasswordDto {
@@ -7,6 +13,10 @@ export class ResetPasswordDto {
   token?: string;
 
   @MinLength(8, { message: 'Password must be at least 8 characters long.' })
+  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*/, {
+    message:
+      'Password too weak - must contain uppercase, lowercase, and number/special char',
+  })
   newPassword: string;
 }
 

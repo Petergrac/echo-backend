@@ -9,6 +9,8 @@ import { Repository } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
 import { AuditLogService } from '../../../common/services/audit.service';
 import { AuditAction, AuditResource } from '../../../common/enums/audit.enums';
+import { plainToInstance } from 'class-transformer';
+import { UserResponseDto } from '../../auth/dto/user-response.dto';
 
 @Injectable()
 export class FollowService {
@@ -152,7 +154,13 @@ export class FollowService {
     });
 
     return {
-      followers: followers.map((f) => f.follower),
+      followers: plainToInstance(
+        UserResponseDto,
+        followers.map((f) => f.follower),
+        {
+          excludeExtraneousValues: true,
+        },
+      ),
       currentPage: page,
       limit,
       hasNextPage: totalCount > page * limit,
@@ -192,7 +200,13 @@ export class FollowService {
 
     const totalPages = Math.ceil(totalCount / limit);
     return {
-      following: followingEntities.map((f) => f.following),
+      following: plainToInstance(
+        UserResponseDto,
+        followingEntities.map((f) => f.following),
+        {
+          excludeExtraneousValues: true,
+        },
+      ),
       currentPage: page,
       totalPages,
       limit,

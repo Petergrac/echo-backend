@@ -6,7 +6,7 @@ import { Bookmark } from './bookmark.entity';
 import { Reply } from './reply.entity';
 import { Repost } from './repost.entity';
 import { Media } from './media.entity';
-import { Hashtag } from './hashtag.entity';
+import { PostHashtag } from './hashtag.entity';
 import { Mention } from './mention.entity';
 
 export enum PostVisibility {
@@ -66,8 +66,8 @@ export class Post extends CoreEntity {
   @OneToMany(() => Media, (media) => media.post)
   media: Media[];
 
-  @OneToMany(() => Hashtag, (hashtag) => hashtag.postHashtags)
-  postHashtags: Hashtag[];
+  @OneToMany(() => PostHashtag, (postHashtag) => postHashtag.post)
+  postHashtags: PostHashtag[];
 
   @OneToMany(() => Mention, (mention) => mention.post)
   mentions: Mention[];

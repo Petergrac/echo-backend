@@ -4,6 +4,9 @@ import { Repository } from 'typeorm';
 import { Hashtag } from '../entities/hashtag.entity';
 import { PostHashtag } from '../entities/hashtag.entity';
 import { Post } from '../entities/post.entity';
+import { plainToInstance } from 'class-transformer';
+import { TagResponseDto } from '../dto/hashtag-response.dto';
+import { PostResponseDto } from '../dto/post-response.dto';
 
 @Injectable()
 export class HashtagService {
@@ -132,8 +135,9 @@ export class HashtagService {
         .addOrderBy('hashtag.usageCount', 'DESC')
         .limit(limit)
         .getMany();
-
-      return trendingHashtags;
+      return plainToInstance(TagResponseDto, trendingHashtags, {
+        excludeExtraneousValues: true,
+      });
     } catch (error) {
       this.logger.error(`Error getting trending hashtags: ${error.message}`);
       throw error;
@@ -171,7 +175,9 @@ export class HashtagService {
         .getManyAndCount();
 
       return {
-        posts,
+        posts: plainToInstance(PostResponseDto, posts, {
+          excludeExtraneousValues: true,
+        }),
         pagination: {
           currentPage: page,
           totalPages: Math.ceil(total / limit),

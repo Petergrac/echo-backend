@@ -114,12 +114,13 @@ export class TokenService {
       .verify(candidate.hashedToken, plain)
       .catch(() => false);
     //* 3. If reused(crucial for logout) or expired -> revoke and audit
-    if (!ok || candidate.expiresAt < new Date() || candidate.revoked) {
+    if (!ok || candidate.expiresAt < new Date()) {
+      //* Mark it as used if expired or invalid
       await this.refreshTokenRepo.update(
-        { user: { id: candidate.user.id }, revoked: false },
-        { revoked: true },
+        { id: candidate.id },
+        { revoked: true, lastUsedAt: new Date() },
       );
-      //? audit it
+      //? audit it (if the token is expired or invalid)
       await this.auditService.createLog({
         action: AuditAction.REUSED_REFRESH_TOKEN,
         resource: AuditResource.AUTH,
@@ -129,7 +130,25 @@ export class TokenService {
       });
       throw new ForbiddenException('Refresh token invalid or expired'); //* Need to login to get a new refresh token
     }
-
+    //! Someone is trying to reuse a revoked token
+    if (candidate.revoked) {
+      //* Revoke all and report of suspicious activity
+      await this.refreshTokenRepo.update(
+        { user: { id: candidate.user.id }, revoked: false },
+        { revoked: true },
+      );
+      await this.auditService.createLog({
+        action: AuditAction.SUSPICIOUS_ACTIVITY,
+        resource: AuditResource.AUTH,
+        ip,
+        userAgent,
+        userId: candidate.user.id,
+        metadata: {
+          token: candidate.tokenId,
+        },
+      });
+      throw new ForbiddenException('This token has been used.');
+    }
     //* 4.Revoke specific token candidate & audit
     await this.refreshTokenRepo.update(
       { id: candidate.id },

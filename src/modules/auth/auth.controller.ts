@@ -162,14 +162,14 @@ export class AuthController {
   }
 
   /**
-   * TODO ======================= LOGOUT =========================
+   * TODO ======================= LOGOUT A SINGLE DEVICE =========================
    * //* Revoke refresh token(s) and clear cookie
    */
   @HttpCode(HttpStatus.NO_CONTENT)
   @Get('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const refreshToken = req.cookies?.refresh_token;
+    const refreshToken = (req.cookies as { refresh_token: string | undefined })
+      .refresh_token;
     if (refreshToken) {
       await this.tokenService.revokeRefreshToken(refreshToken);
       //! Clear cookie
@@ -177,6 +177,11 @@ export class AuthController {
       return;
     }
   }
+  /**
+   *  TODO ======================= LOGOUT ALL LOGGED IN DEVICES =========================
+   * @param req
+   * @param res
+   */
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('logout-all')
   async logoutAll(

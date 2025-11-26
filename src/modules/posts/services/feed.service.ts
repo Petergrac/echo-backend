@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Post } from '../entities/post.entity';
 import { User } from '../../auth/entities/user.entity';
+import { plainToInstance } from 'class-transformer';
+import { PostResponseDto } from '../dto/post-response.dto';
 
 interface PostScore {
   post: Post;
@@ -23,7 +25,7 @@ export class FeedService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {}
 
-  //TODO ==================== ALGORITHMIC FEED ====================
+  //TODO ==================== ALGORITHMIC FEED (MUTUAL FOLLOWINGS) ====================
   async getAlgorithmicFeed(
     userId: string,
     page: number = 1,
@@ -42,7 +44,10 @@ export class FeedService {
       .sort((a, b) => b.score - a.score)
       .slice((page - 1) * limit, page * limit)
       .map((item) => ({
-        ...item.post,
+        ...plainToInstance(PostResponseDto, item.post, {
+          excludeExtraneousValues: true,
+          exposeUnsetFields: false,
+        }),
         score: item.score,
         scoreFactors: item.factors,
       }));
@@ -67,66 +72,83 @@ export class FeedService {
     timeWindow.setHours(
       timeWindow.getHours() - (timeframe === 'day' ? 24 : 168),
     );
-
-    const [posts, total] = await this.postRepo
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.author', 'author')
-      .leftJoinAndSelect('post.media', 'media')
-      .where('post.createdAt > :timeWindow', { timeWindow })
-      .andWhere('post.visibility = :visibility', { visibility: 'public' })
-      .andWhere('post.deletedAt IS NULL')
-      .orderBy(
-        '(post.likeCount + post.replyCount * 2 + post.repostCount * 1.5)',
-        'DESC',
-      )
-      .addOrderBy('post.viewCount', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
-
-    return {
-      posts,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalItems: total,
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPrevPage: page > 1,
-      },
-    };
+    try {
+      //* 1. Order the posts of a given time window based on the engagement score(likes, replies, reposts)
+      const [posts, total] = await this.postRepo
+        .createQueryBuilder('post')
+        .leftJoinAndSelect('post.author', 'author')
+        .leftJoinAndSelect('post.media', 'media')
+        .addSelect(
+          `("post"."likeCount" + "post"."replyCount" * 2 + "post"."repostCount" * 1.5)`,
+          'engagement_score',
+        )
+        .where('post.createdAt > :timeWindow', { timeWindow })
+        .andWhere('post.visibility = :visibility', { visibility: 'public' })
+        .andWhere('post.deletedAt IS NULL')
+        .orderBy('engagement_score', 'DESC')
+        .addOrderBy('"post"."createdAt"', 'DESC')
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .getManyAndCount();
+      return {
+        posts: plainToInstance(PostResponseDto, posts, {
+          excludeExtraneousValues: true,
+          exposeUnsetFields: false,
+        }),
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          totalItems: total,
+          hasNextPage: page < Math.ceil(total / limit),
+          hasPrevPage: page > 1,
+        },
+      };
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   //TODO ==================== DISCOVER FEED ====================
   async getDiscoverFeed(userId: string, page: number = 1, limit: number = 20) {
-    //* Get posts from non-followed users with high engagement
-    const posts = await this.postRepo
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.author', 'author')
-      .leftJoinAndSelect('post.media', 'media')
-      .where('post.authorId != :userId', { userId })
-      .andWhere('post.visibility = :visibility', { visibility: 'public' })
-      .andWhere('post.deletedAt IS NULL')
-      .andWhere(
-        `post.authorId NOT IN (
-          SELECT following_id FROM follow 
-          WHERE follower_id = :userId AND deleted_at IS NULL
+    try {
+      //* Get posts from non-followed users with high engagement
+      const posts = await this.postRepo
+        .createQueryBuilder('post')
+        .leftJoinAndSelect('post.author', 'author')
+        .leftJoinAndSelect('post.media', 'media')
+        .where('post.authorId != :userId', { userId })
+        .andWhere('post.visibility = :visibility', { visibility: 'public' })
+        .andWhere('post.deletedAt IS NULL')
+        .andWhere(
+          `post.authorId NOT IN (
+          SELECT "followingId" FROM follow 
+          WHERE "followerId" = :userId AND "deletedAt" IS NULL
         )`,
-        { userId },
-      )
-      .orderBy('(post.likeCount + post.replyCount + post.repostCount)', 'DESC')
-      .addOrderBy('post.createdAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getMany();
+          { userId },
+        )
+        .orderBy(
+          '(post.likeCount + post.replyCount + post.repostCount)',
+          'DESC',
+        ) //?Engagement
+        .addOrderBy('post.createdAt', 'DESC')
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .getMany();
 
-    return {
-      posts,
-      pagination: {
-        currentPage: page,
-        hasNextPage: posts.length === limit,
-        hasPrevPage: page > 1,
-      },
-    };
+      return {
+        posts: plainToInstance(PostResponseDto, posts, {
+          excludeExtraneousValues: true,
+          exposeUnsetFields: false,
+        }),
+        pagination: {
+          currentPage: page,
+          hasNextPage: posts.length === limit,
+          hasPrevPage: page > 1,
+        },
+      };
+    } catch (error) {
+      console.log(error.message);
+    }
   }
 
   //? ==================== PRIVATE METHODS ====================

@@ -1,4 +1,12 @@
-import { Column, Entity, Index, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryColumn,
+} from 'typeorm';
 import { CoreEntity } from '../../../common/entities/common.entity';
 import { Post } from './post.entity';
 
@@ -30,16 +38,18 @@ export class Hashtag extends CoreEntity {
 @Index(['post', 'hashtag']) // For post-specific hashtag queries
 export class PostHashtag extends CoreEntity {
   @ManyToOne(() => Post, (post) => post.postHashtags, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'postId' })
   post: Post;
 
   @ManyToOne(() => Hashtag, (hashtag) => hashtag.postHashtags, {
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'hashtagId' })
   hashtag: Hashtag;
 
-  @Column()
+  @PrimaryColumn()
   postId: string;
 
-  @Column()
+  @PrimaryColumn()
   hashtagId: string;
 }

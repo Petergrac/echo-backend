@@ -1,4 +1,4 @@
-import { DataSourceOptions } from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategy';
 import { config } from 'dotenv';
 import { ConfigService } from '@nestjs/config';
@@ -20,3 +20,6 @@ export const dataSourceOptions: DataSourceOptions = {
   },
   namingStrategy: new SnakeNamingStrategy(),
 };
+
+const dataSource = new DataSource(dataSourceOptions);
+export default dataSource;

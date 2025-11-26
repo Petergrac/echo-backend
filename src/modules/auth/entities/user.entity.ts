@@ -47,7 +47,7 @@ export class User extends CoreEntity {
   @Column({ nullable: true })
   resourceType: string;
 
-  @Column()
+  @Column({ select: false })
   passwordHash: string;
 
   @Column({ default: false })

@@ -4,11 +4,15 @@ import pinoHttp, { Options } from 'pino-http';
 import helmet from 'helmet';
 import { IncomingMessage } from 'http';
 import { AllExceptionsFilter } from './common/filters/custom-all-filter..filter';
-import { ValidationPipe } from '@nestjs/common';
+import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: new ConsoleLogger({
+      prefix: 'ECHO-APP',
+    }),
+  });
 
   /**
    * TODO==================  CONFIGURING HELMET =============

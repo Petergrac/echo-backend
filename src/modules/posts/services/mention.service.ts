@@ -1,4 +1,3 @@
-// services/mention.service.ts
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -6,6 +5,8 @@ import { Mention } from '../entities/mention.entity';
 import { User } from '../../auth/entities/user.entity';
 import { Post } from '../entities/post.entity';
 import { Reply } from '../entities/reply.entity';
+import { plainToInstance } from 'class-transformer';
+import { MentionResponseDto } from '../dto/mention-response.dto';
 
 @Injectable()
 export class MentionService {
@@ -142,7 +143,9 @@ export class MentionService {
       });
 
       return {
-        mentions,
+        mentions: plainToInstance(MentionResponseDto, mentions, {
+          excludeExtraneousValues: true,
+        }),
         pagination: {
           currentPage: page,
           totalPages: Math.ceil(total / limit),

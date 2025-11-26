@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { FindOptionsWhere, MoreThan, Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as argon2 from 'argon2';
 import { MailService } from '../../common/mailer/mail.service';
@@ -64,7 +64,6 @@ export class AuthService {
       throw new ConflictException(`${fieldTaken} already exists`);
     }
     //* 2. Hash Password
-    console.log(dto.password);
     const passwordHash = await argon2.hash(dto.password);
     const user = this.userRepo.create({
       ...dto,
@@ -134,12 +133,20 @@ export class AuthService {
    */
   async login(dto: LoginDto, ip?: string, userAgent?: string) {
     //* 0.Check if user exists
-    const user = await this.userRepo.findOne({
-      where: [
-        { email: dto.email },
-        { username: dto.username },
-      ] as FindOptionsWhere<User>[],
-    });
+    // const user = await this.userRepo.findOne({
+    //   where: [
+    //     { email: dto.email },
+    //     { username: dto.username },
+    //   ] as FindOptionsWhere<User>[],
+    // });
+    const user = await this.userRepo
+      .createQueryBuilder('user')
+      .where('user.email =:emailDto OR user.username =:name', {
+        emailDto: dto.email,
+        name: dto.username,
+      })
+      .addSelect('user.passwordHash') //? select unselectable column
+      .getOne();
     //* 1.Verify the password and user
     if (!user || !(await argon2.verify(user.passwordHash, dto.password))) {
       //? Log in case the login fails
@@ -245,7 +252,6 @@ export class AuthService {
         },
         relations: ['user'],
       });
-      console.log(tokenRecord);
       if (!tokenRecord)
         throw new ForbiddenException('Invalid or expired token');
 
