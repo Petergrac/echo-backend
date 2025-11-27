@@ -11,13 +11,19 @@ import { AuditLogService } from '../../../common/services/audit.service';
 import { AuditAction, AuditResource } from '../../../common/enums/audit.enums';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from '../../auth/dto/user-response.dto';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationType } from '../../notifications/entities/notification.entity';
 
 @Injectable()
 export class FollowService {
   constructor(
+    //* Repositories
     @InjectRepository(Follow) private readonly followRepo: Repository<Follow>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+
+    //* services
     private readonly auditService: AuditLogService,
+    private readonly notificationService: NotificationsService,
   ) {}
 
   //* ===================================================
@@ -81,7 +87,12 @@ export class FollowService {
           restored: true,
         },
       });
-
+      //* SEND FOLLOW NOTIFICATION
+      await this.notificationService.createNotification({
+        type: NotificationType.FOLLOW,
+        recipientId: target.id,
+        actorId: currentUserId,
+      });
       return { status: 'FOLLOWED', target: target.username };
     }
 
@@ -93,6 +104,13 @@ export class FollowService {
 
     await this.followRepo.save(newFollow);
 
+    //* SEND FOLLOW NOTIFICATION(NEW)
+    await this.notificationService.createNotification({
+      type: NotificationType.FOLLOW,
+      recipientId: target.id,
+      actorId: currentUserId,
+    });
+    //* Log the action
     await this.auditService.createLog({
       action: AuditAction.USER_FOLLOWED,
       resource: AuditResource.USER,

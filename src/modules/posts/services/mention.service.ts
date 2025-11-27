@@ -7,17 +7,23 @@ import { Post } from '../entities/post.entity';
 import { Reply } from '../entities/reply.entity';
 import { plainToInstance } from 'class-transformer';
 import { MentionResponseDto } from '../dto/mention-response.dto';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationType } from '../../notifications/entities/notification.entity';
 
 @Injectable()
 export class MentionService {
   private readonly logger = new Logger(MentionService.name);
 
   constructor(
+    //* Repositories
     @InjectRepository(Mention)
     private readonly mentionRepo: Repository<Mention>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Post) private readonly postRepo: Repository<Post>,
     @InjectRepository(Reply) private readonly replyRepo: Repository<Reply>,
+
+    //* Services
+    private readonly notificationService: NotificationsService,
   ) {}
 
   //TODO ==================== EXTRACT MENTIONS FROM CONTENT ====================
@@ -87,7 +93,6 @@ export class MentionService {
     const queryRunner = this.mentionRepo.manager.connection.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-
     try {
       //* 1. Validate mentioned users exist
       const mentionedUsers = await this.validateMentionedUsers(mentions);
@@ -95,19 +100,24 @@ export class MentionService {
         await queryRunner.commitTransaction();
         return;
       }
-
       //* 2. Verify post/reply exists
       if (replyId) {
         const reply = await this.replyRepo.findOneBy({ id: replyId });
         if (!reply) throw new NotFoundException('Reply not found');
       } else {
-        const post = await this.postRepo.findOneBy({ id: postId });
+        const post = await this.postRepo.findOne({
+          where: {
+            id: postId,
+          },
+          select: {
+            id: true,
+          },
+        });
         if (!post) throw new NotFoundException('Post not found');
       }
-
       //* 3. Create mention records
       for (const user of mentionedUsers) {
-        //* Skip if user mentions themselves
+        //* 3.1 Skip if user mentions themselves
         if (user.id === authorId) continue;
 
         const mention = queryRunner.manager.create(Mention, {
@@ -118,6 +128,14 @@ export class MentionService {
         });
 
         await queryRunner.manager.save(mention);
+        //* 3.2 SEND NOTIFICATION(NEW)
+        await this.notificationService.createNotification({
+          type: NotificationType.MENTION,
+          recipientId: user.id,
+          actorId: authorId,
+          postId: postId,
+          replyId: replyId,
+        });
       }
 
       await queryRunner.commitTransaction();

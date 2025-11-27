@@ -21,6 +21,9 @@ import { PostResponseDto } from '../dto/post-response.dto';
 import { UserResponseDto } from '../../auth/dto/user-response.dto';
 import { ReplyResponseDto } from '../dto/reply-response.dto';
 import { MentionService } from './mention.service';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationType } from '../../notifications/entities/notification.entity';
+import { HashtagService } from './hashtag.service';
 
 @Injectable()
 export class EngagementService {
@@ -39,6 +42,8 @@ export class EngagementService {
     private readonly cloudinary: CloudinaryService,
     private readonly dataSource: DataSource,
     private readonly mentionService: MentionService,
+    private readonly notificationService: NotificationsService,
+    private readonly hashTagService: HashtagService,
   ) {}
 
   //TODO ==================== TOGGLE LIKE ====================
@@ -56,7 +61,6 @@ export class EngagementService {
       //* 1. Check if post exists
       const post = await this.postRepo.findOneBy({ id: postId });
       if (!post) throw new NotFoundException('Post not found');
-
       //* 2. Check for existing like
       const existingLike = await this.likeRepo.findOne({
         where: { post: { id: postId }, user: { id: userId } },
@@ -85,6 +89,14 @@ export class EngagementService {
           1,
         );
         action = 'LIKED';
+
+        //* 4.1 Send notification
+        await this.notificationService.createNotification({
+          type: NotificationType.LIKE,
+          recipientId: post.authorId,
+          actorId: userId,
+          postId: postId,
+        });
       } else {
         //* 5. Create new like
         const newLike = this.likeRepo.create({
@@ -99,6 +111,13 @@ export class EngagementService {
           1,
         );
         action = 'LIKED';
+        //* 5.1 Send notification(NEW)
+        await this.notificationService.createNotification({
+          type: NotificationType.LIKE,
+          recipientId: post.authorId,
+          actorId: userId,
+          postId: postId,
+        });
       }
 
       await queryRunner.commitTransaction();
@@ -119,6 +138,7 @@ export class EngagementService {
       return { status: action, postId };
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      console.log(error);
       throw error;
     } finally {
       await queryRunner.release();
@@ -305,7 +325,15 @@ export class EngagementService {
 
     try {
       //* 1. Check if post exists
-      const post = await this.postRepo.findOneBy({ id: postId });
+      const post = await this.postRepo.findOne({
+        where: {
+          id: postId,
+        },
+        select: {
+          id: true,
+          authorId: true,
+        },
+      });
       if (!post) throw new NotFoundException('Post not found');
 
       //* 2. Validate parent reply if provided
@@ -342,19 +370,6 @@ export class EngagementService {
       });
 
       const savedReply = await queryRunner.manager.save(Reply, reply);
-      //* Extract and save the mentions if available
-      const mentions = this.mentionService.extractMentions(
-        createReplyDto.content,
-      );
-
-      if (mentions.length > 0) {
-        await this.mentionService.createMentions(
-          mentions,
-          postId,
-          userId,
-          savedReply.id,
-        );
-      }
 
       //* 5. Save media if files exist
       if (uploadedResponse.length > 0) {
@@ -387,9 +402,39 @@ export class EngagementService {
           1,
         );
       }
-
       await queryRunner.commitTransaction();
+      //todo---<<<>> SEND NOTIFICATION TO AUTHOR, SOMEONE REPLIED YOUR POST
+      //* 4.1 Send notification
+      await this.notificationService.createNotification({
+        type: NotificationType.REPLY,
+        recipientId: savedReply.authorId,
+        actorId: userId,
+        postId: postId,
+        replyId: savedReply.id,
+      });
 
+      //* <<<<<<<<<<<< EXTRACT MENTION & HASHTAG >>>>>>>>>>>>>>>>>>>>>>>
+      const hashtags = this.hashTagService.extractHashtags(
+        createReplyDto.content,
+      );
+      const mentions = this.mentionService.extractMentions(
+        createReplyDto.content,
+      );
+      //*<><><><> Save hashtags and mentions
+
+      if (hashtags.length > 0) {
+        await this.hashTagService.createHashtags(hashtags, postId);
+      }
+
+      if (mentions.length > 0) {
+        //* Will send notification inside the mention
+        await this.mentionService.createMentions(
+          mentions,
+          postId,
+          userId,
+          savedReply.id,
+        );
+      }
       //* 7. Audit log
       await this.auditService.createLog({
         action: AuditAction.REPLY_CREATED,
@@ -422,6 +467,7 @@ export class EngagementService {
           ),
         );
       }
+      console.log(error);
       throw error;
     } finally {
       await queryRunner.release();
@@ -611,6 +657,13 @@ export class EngagementService {
           1,
         );
         action = 'REPOSTED';
+        //* 4.1 Send notification
+        await this.notificationService.createNotification({
+          type: NotificationType.REPOST,
+          recipientId: originalPost.author.id,
+          actorId: userId,
+          postId: postId,
+        });
       } else {
         //* 5. Create new repost
         const newRepost = this.repostRepo.create({
@@ -626,6 +679,13 @@ export class EngagementService {
           1,
         );
         action = 'REPOSTED';
+        //* 5.1 Send notification
+        await this.notificationService.createNotification({
+          type: NotificationType.REPOST,
+          recipientId: originalPost.authorId,
+          actorId: userId,
+          postId: postId,
+        });
       }
 
       await queryRunner.commitTransaction();
@@ -646,6 +706,7 @@ export class EngagementService {
       return { status: action, postId };
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      console.log(error);
       throw error;
     } finally {
       await queryRunner.release();

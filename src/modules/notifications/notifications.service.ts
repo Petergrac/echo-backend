@@ -4,6 +4,8 @@ import {
   NotFoundException,
   ForbiddenException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, IsNull } from 'typeorm';
@@ -11,6 +13,9 @@ import { Notification, NotificationType } from './entities/notification.entity';
 import { User } from '../auth/entities/user.entity';
 import { Post } from '../posts/entities/post.entity';
 import { Reply } from '../posts/entities/reply.entity';
+import { plainToInstance } from 'class-transformer';
+import { NotificationResponseDto } from './dto/response-notification.dto';
+import { NotificationsGateway } from './notifications.gateway';
 
 interface CreateNotificationData {
   type: NotificationType;
@@ -34,11 +39,16 @@ export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
   constructor(
+    //* Repositories
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Post) private readonly postRepo: Repository<Post>,
     @InjectRepository(Reply) private readonly replyRepo: Repository<Reply>,
+
+    //* Services
+    @Inject(forwardRef(() => NotificationsGateway))
+    private readonly notificationGateway: NotificationsGateway,
   ) {}
 
   //TODO ==================== CREATE NOTIFICATION ====================
@@ -102,7 +112,11 @@ export class NotificationsService {
         this.logger.log(
           `Duplicate notification skipped for user: ${data.recipientId}`,
         );
-        return existingNotification;
+        //? Format notification for client
+        return plainToInstance(NotificationResponseDto, existingNotification, {
+          excludeExtraneousValues: true,
+          exposeUnsetFields: false,
+        });
       }
 
       //* 7. Create and save notification
@@ -121,6 +135,20 @@ export class NotificationsService {
       this.logger.log(
         `Created ${data.type} notification for user: ${data.recipientId}`,
       );
+      //* 8.SEND REAL-TIME NOTIFICATION VIA WEBSOCKET
+      if (savedNotification) {
+        this.notificationGateway
+          .sendNotificationToUser(
+            data.recipientId,
+            plainToInstance(NotificationResponseDto, savedNotification, {
+              excludeExtraneousValues: true,
+              exposeUnsetFields: false,
+            }),
+          )
+          .catch((error) => {
+            this.logger.error('Failed to send websocket notification', error);
+          });
+      }
       return savedNotification;
     } catch (error) {
       this.logger.error(
@@ -142,7 +170,10 @@ export class NotificationsService {
     userId: string,
     page: number = 1,
     limit: number = 20,
-  ): Promise<{ notifications: Notification[]; pagination: PaginationInfo }> {
+  ): Promise<{
+    notifications: NotificationResponseDto[];
+    pagination: PaginationInfo;
+  }> {
     try {
       //* 1. Validate user exists
       const user = await this.userRepo.findOneBy({ id: userId });
@@ -173,7 +204,9 @@ export class NotificationsService {
       };
 
       return {
-        notifications,
+        notifications: plainToInstance(NotificationResponseDto, notifications, {
+          excludeExtraneousValues: true,
+        }),
         pagination,
       };
     } catch (error) {
@@ -183,10 +216,7 @@ export class NotificationsService {
   }
 
   //TODO ==================== MARK AS READ ====================
-  async markAsRead(
-    notificationId: string,
-    userId: string,
-  ): Promise<Notification | null> {
+  async markAsRead(notificationId: string, userId: string) {
     const queryRunner =
       this.notificationRepo.manager.connection.createQueryRunner();
     await queryRunner.connect();
@@ -225,7 +255,11 @@ export class NotificationsService {
       });
 
       this.logger.log(`Marked notification as read: ${notificationId}`);
-      return updatedNotification;
+      if (updatedNotification) {
+        return plainToInstance(NotificationResponseDto, updatedNotification, {
+          excludeExtraneousValues: true,
+        });
+      }
     } catch (error) {
       await queryRunner.rollbackTransaction();
       this.logger.error(`Error marking notification as read: ${error.message}`);
@@ -356,15 +390,27 @@ export class NotificationsService {
 
     try {
       let createdCount = 0;
-
+      const userNotifications: Map<string, any[]> = new Map();
       for (const data of notificationsData) {
         try {
           const notification = await this.createNotification(data);
           if (notification) {
             createdCount++;
+
+            //* Group notifications by user for batch websocket sending
+            if (!userNotifications.has(data.recipientId)) {
+              userNotifications.set(data.recipientId, []);
+            }
+            //* Format it and add it to the batch
+            userNotifications.get(data.recipientId)?.push(
+              plainToInstance(NotificationResponseDto, notification, {
+                excludeExtraneousValues: true,
+                exposeUnsetFields: false,
+              }),
+            );
           }
         } catch (error) {
-          // Continue with next notification if one fails
+          //? Continue with next notification if one fails
           this.logger.warn(
             `Failed to create batch notification: ${error.message}`,
           );
@@ -372,6 +418,19 @@ export class NotificationsService {
       }
 
       await queryRunner.commitTransaction();
+      //* SEND BATCH NOTIFICATIONS VIA WEBSOCKETS
+      userNotifications.forEach((notifications, userId) => {
+        notifications.forEach((notification) => {
+          this.notificationGateway
+            .sendNotificationToUser(userId, notification)
+            .catch((error) =>
+              this.logger.error(
+                `Failed to send batch ws notification to ${userId}:`,
+                error,
+              ),
+            );
+        });
+      });
       this.logger.log(`Created ${createdCount} batch notifications`);
       return createdCount;
     } catch (error) {
@@ -412,7 +471,7 @@ export class NotificationsService {
     }
   }
 
-  //TODO ==================== CLEANUP OLD NOTIFICATIONS ====================
+  //TODO ==================== CLEANUP OLD NOTIFICATIONS (CRON JOB) ====================
   async cleanupOldNotifications(daysOld: number = 30): Promise<number> {
     const queryRunner =
       this.notificationRepo.manager.connection.createQueryRunner();
@@ -446,36 +505,5 @@ export class NotificationsService {
     } finally {
       await queryRunner.release();
     }
-  }
-
-  //? ==================== PRIVATE UTILITY METHODS ====================
-
-  // //* Format notification for client (useful for WebSocket responses)
-  private formatNotificationForClient(notification: Notification) {
-    return {
-      id: notification.id,
-      type: notification.type,
-      actor: {
-        id: notification.actor.id,
-        username: notification.actor.username,
-        avatar: notification.actor.avatar,
-      },
-      post: notification.post
-        ? {
-            id: notification.post.id,
-            content: notification.post.content,
-            mediaCount: notification.post.mediaCount,
-          }
-        : null,
-      reply: notification.reply
-        ? {
-            id: notification.reply.id,
-            content: notification.reply.content,
-          }
-        : null,
-      read: notification.read,
-      createdAt: notification.createdAt,
-      metadata: notification.metadata,
-    };
   }
 }

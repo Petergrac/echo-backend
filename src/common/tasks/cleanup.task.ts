@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../../modules/auth/entities/user.entity';
 import { Repository } from 'typeorm';
 import { HashtagService } from '../../modules/posts/services/hashtag.service';
+import { NotificationsService } from '../../modules/notifications/notifications.service';
 
 //TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DELETE OLD ACCOUNTS FROM THE DATABASE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 @Injectable()
@@ -47,5 +48,15 @@ export class DeleteOrphanedHashTagsTask {
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async cleanUnusedTags() {
     await this.hashTagService.cleanupOrphanedHashtags();
+  }
+}
+//TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DELETE OLD NOTIFICATIONS >>>>>>>>>>>>>>>>>>
+@Injectable()
+export class DeleteOldNotifications {
+  constructor(private readonly notificationService: NotificationsService) {}
+
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  async removeNotifications() {
+    await this.notificationService.cleanupOldNotifications(15);
   }
 }

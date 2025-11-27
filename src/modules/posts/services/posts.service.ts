@@ -71,20 +71,7 @@ export class PostsService {
         author: { id: userId },
         mediaCount: uploadedResponse.length,
       });
-      //* <<<<<<<<<<<< EXTRACT MENTION & HASHTAG >>>>>>>>>>>>>>>>>>>>>>>
-      const hashtags = this.hashTagService.extractHashtags(cdto.content);
-      const mentions = this.mentionService.extractMentions(cdto.content);
-      //*<><><><> Save hashtags and mentions
-      if (hashtags.length > 0) {
-        await this.hashTagService.createHashtags(hashtags, post.id);
-      }
-
-      if (mentions.length > 0) {
-        await this.mentionService.createMentions(mentions, post.id, userId);
-      }
-
       const savedPost = await queryRunner.manager.save(Post, post);
-
       //* 3. Save media entities if files exist
       if (uploadedResponse.length > 0) {
         const mediaEntities = uploadedResponse.map((media) =>
@@ -100,7 +87,23 @@ export class PostsService {
 
       //* 4. Commit transaction
       await queryRunner.commitTransaction();
+      //* <<<<<<<<<<<< EXTRACT MENTION & HASHTAG >>>>>>>>>>>>>>>>>>>>>>>
+      const hashtags = this.hashTagService.extractHashtags(cdto.content);
+      const mentions = this.mentionService.extractMentions(cdto.content);
+      //*<><><><> Save hashtags and mentions
 
+      if (hashtags.length > 0) {
+        await this.hashTagService.createHashtags(hashtags, savedPost.id);
+      }
+
+      if (mentions.length > 0) {
+        //* Will send notification inside the mention
+        await this.mentionService.createMentions(
+          mentions,
+          savedPost.id,
+          userId,
+        );
+      }
       //* 5. Audit log
       await this.auditService.createLog({
         action: AuditAction.POST_CREATED,
