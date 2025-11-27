@@ -9,7 +9,6 @@ import { Reply } from '../posts/entities/reply.entity';
 import { NotificationsController } from './notification.controller';
 import { DeleteOldNotifications } from '../../common/tasks/cleanup.task';
 import { JwtService } from '@nestjs/jwt';
-import { WsGuard } from './guards/ws-jwt.guard';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Notification, User, Post, Reply])],
@@ -19,7 +18,6 @@ import { WsGuard } from './guards/ws-jwt.guard';
     JwtService,
     NotificationsService,
     DeleteOldNotifications,
-    WsGuard,
   ],
   exports: [NotificationsService],
 })

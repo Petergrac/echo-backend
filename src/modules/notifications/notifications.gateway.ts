@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   ConnectedSocket,
   MessageBody,
@@ -7,20 +10,19 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
 import { NotificationsService } from './notifications.service';
 import { Server, Socket } from 'socket.io';
-import {
-  forwardRef,
-  Inject,
-  Injectable,
-  Logger,
-  UseGuards,
-} from '@nestjs/common';
-import { WsGuard } from './guards/ws-jwt.guard';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../auth/entities/user.entity';
 
 interface OnlineUser {
   socketId: string;
+  username: string;
   userId: string;
   connectedAt: Date;
 }
@@ -32,7 +34,6 @@ interface OnlineUser {
   },
 })
 @Injectable()
-@UseGuards(WsGuard)
 export class NotificationsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -41,8 +42,12 @@ export class NotificationsGateway
   private onlineUsers: Map<string, OnlineUser> = new Map();
 
   constructor(
+    //* Repositories
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    //* Services
     @Inject(forwardRef(() => NotificationsService))
     private readonly notificationsService: NotificationsService,
+    private readonly jwtService: JwtService,
   ) {}
   //TODO ===============... AFTER INIT ====================
   afterInit() {
@@ -51,32 +56,47 @@ export class NotificationsGateway
   //TODO ============ HANDLE CONNECTIONS ---------------=====
   async handleConnection(client: Socket) {
     try {
-      const user = client.data.user as { username: string; userId: string };
-
+      //* Auth
+      const token = this.extractTokenFromHeader(client);
+      if (!token) throw new WsException('Unauthorized');
+      const payload = this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET,
+      });
+      client.data.user = payload;
+      const user = client.data.user as { sub: string };
+      //* Get Username from the database
+      const userFromDatabase = await this.userRepo.findOne({
+        where: { id: user.sub },
+        select: {
+          username: true,
+        },
+      });
+      if (!userFromDatabase) throw new WsException('User not found');
       //* 1.Store user connections
       this.onlineUsers.set(client.id, {
         socketId: client.id,
-        userId: user.userId,
+        username: userFromDatabase.username,
+        userId: user.sub,
         connectedAt: new Date(),
       });
 
       //* 2.Join user to their personal room
-      client.join(`user:${user.userId}`);
+      client.join(`user:${user.sub}`);
 
       //* 3.Send connection confirmation
       client.emit('connected', {
         message: 'Connected to notifications',
-        userId: user.userId,
+        userId: user.sub,
       });
 
       //* 4.Send initial unread count
       const unreadCount = await this.notificationsService.getUnreadCount(
-        user.userId,
+        user.sub,
       );
       client.emit('unread-count', { count: unreadCount });
 
       this.logger.log(
-        `🔗 User ${user.username} connected to notifications. Online: ${this.onlineUsers.size}`,
+        `🔗 User ${userFromDatabase.username} connected to notifications. Online: ${this.onlineUsers.size}`,
       );
     } catch (error) {
       this.logger.error(`Connection error for client ${client.id}:`, error);
@@ -90,7 +110,7 @@ export class NotificationsGateway
       if (user) {
         this.onlineUsers.delete(client.id);
         this.logger.log(
-          `🔴 User ${user.userId} disconnected. Online: ${this.onlineUsers.size}`,
+          `🔴 User ${user.username} disconnected. Online: ${this.onlineUsers.size}`,
         );
       }
     } catch (error) {
@@ -167,6 +187,7 @@ export class NotificationsGateway
     try {
       //* 1.Mark all notifications of a given user as read
       const user = client.data.user as { userId: string };
+      console.log(user.userId);
       const result = await this.notificationsService.markAllAsRead(user.userId);
 
       //* 2.Send Confirmation
@@ -224,6 +245,7 @@ export class NotificationsGateway
     @MessageBody() data: { userIds: string[] },
   ) {
     try {
+      console.log(this.onlineUsers);
       const onlineStatus = data.userIds.map((userId) => ({
         userId,
         isOnline: this.isUserOnline(userId),
@@ -261,5 +283,20 @@ export class NotificationsGateway
         .filter(([_, user]) => user.userId === userId)
         .map(([socketId]) => socketId)
     );
+  }
+  private extractTokenFromHeader(client: Socket): string | undefined {
+    //* 1. Try socket.io auth payload
+    const authToken = client.handshake.auth?.token;
+    if (authToken) {
+      return authToken;
+    }
+
+    //* 2. Try Authorization header
+    const header = client.handshake.headers?.authorization;
+    if (header) {
+      return header;
+    }
+
+    return undefined;
   }
 }
