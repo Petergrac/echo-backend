@@ -7,7 +7,10 @@ import { Post } from '../entities/post.entity';
 import { Reply } from '../entities/reply.entity';
 import { plainToInstance } from 'class-transformer';
 import { MentionResponseDto } from '../dto/mention-response.dto';
-import { NotificationsService } from '../../notifications/notifications.service';
+import {
+  CreateNotificationData,
+  NotificationsService,
+} from '../../notifications/services/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 
 @Injectable()
@@ -115,29 +118,30 @@ export class MentionService {
         });
         if (!post) throw new NotFoundException('Post not found');
       }
+      const batchNotifications: CreateNotificationData[] = [];
       //* 3. Create mention records
       for (const user of mentionedUsers) {
         //* 3.1 Skip if user mentions themselves
         if (user.id === authorId) continue;
-
         const mention = queryRunner.manager.create(Mention, {
           mentionedUser: { id: user.id },
           author: { id: user.id },
           postId: replyId ? null : postId,
           replyId: replyId ?? null,
         });
-
-        await queryRunner.manager.save(mention);
-        //* 3.2 SEND NOTIFICATION(NEW)
-        await this.notificationService.createNotification({
+        batchNotifications.push({
           type: NotificationType.MENTION,
           recipientId: user.id,
           actorId: authorId,
-          postId: postId,
-          replyId: replyId,
+          postId,
+          replyId,
         });
+        await queryRunner.manager.save(mention);
       }
-
+      //* SEND BATCH NOTIFICATIONS
+      await this.notificationService.createBatchNotifications(
+        batchNotifications,
+      );
       await queryRunner.commitTransaction();
       this.logger.log(`Created ${mentionedUsers.length} mentions`);
     } catch (error) {

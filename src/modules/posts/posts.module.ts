@@ -21,6 +21,7 @@ import { HashtagController } from './controllers/hashtag.controller';
 import { MentionController } from './controllers/mention.controller';
 import { DeleteOrphanedHashTagsTask } from '../../common/tasks/cleanup.task';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { Follow } from '../users/follow/entities/follow.entity';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       PostHashtag,
       Media,
       User,
+      Follow,
       Bookmark,
       Reply,
       Repost,

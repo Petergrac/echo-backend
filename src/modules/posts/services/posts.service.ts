@@ -17,18 +17,26 @@ import { plainToInstance } from 'class-transformer';
 import { PostResponseDto } from '../dto/post-response.dto';
 import { HashtagService } from './hashtag.service';
 import { MentionService } from './mention.service';
+import { Follow } from '../../users/follow/entities/follow.entity';
+import { NotificationType } from '../../notifications/entities/notification.entity';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 
 @Injectable()
 export class PostsService {
   constructor(
+    //* Repositories
     @InjectRepository(Post) private readonly postRepo: Repository<Post>,
     @InjectRepository(Media) private readonly mediaRepo: Repository<Media>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(Follow) private readonly followRepo: Repository<Follow>,
+
+    //* Services
     private readonly auditService: AuditLogService,
     private readonly cloudinary: CloudinaryService,
     private readonly dataSource: DataSource,
     private readonly hashTagService: HashtagService,
     private readonly mentionService: MentionService,
+    private readonly notificationService: NotificationsService,
   ) {}
 
   //TODO ==================== CREATE POST ====================
@@ -113,7 +121,26 @@ export class PostsService {
         userAgent,
         metadata: { postId: savedPost.id, mediaCount: uploadedResponse.length },
       });
-
+      //todo =========== find all users that follow this author and send notification
+      const followers = await this.followRepo.find({
+        where: {
+          followingId: userId,
+        },
+        select: ['followerId'],
+      });
+      const batchNotifications = followers.map((f) => ({
+        type: NotificationType.SYSTEM,
+        recipientId: f.followerId,
+        actorId: post.authorId,
+        postId: post.id,
+        metadata: {
+          content: post.content,
+        },
+      }));
+      //* Send notification to all the followers
+      await this.notificationService.createBatchNotifications(
+        batchNotifications,
+      );
       //* 6. Transform & Return post with relations
       const postWithRelations = this.getPostWithRelations(savedPost.id);
       return plainToInstance(PostResponseDto, postWithRelations, {

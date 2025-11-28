@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../../modules/auth/entities/user.entity';
 import { Repository } from 'typeorm';
 import { HashtagService } from '../../modules/posts/services/hashtag.service';
-import { NotificationsService } from '../../modules/notifications/notifications.service';
+import { NotificationsService } from '../../modules/notifications/services/notifications.service';
 
 //TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DELETE OLD ACCOUNTS FROM THE DATABASE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 @Injectable()

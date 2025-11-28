@@ -11,7 +11,7 @@ import { AuditLogService } from '../../../common/services/audit.service';
 import { AuditAction, AuditResource } from '../../../common/enums/audit.enums';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from '../../auth/dto/user-response.dto';
-import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 
 @Injectable()

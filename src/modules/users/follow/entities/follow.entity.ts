@@ -1,4 +1,4 @@
-import { Entity, ManyToOne, Unique } from 'typeorm';
+import { Column, Entity, ManyToOne, Unique } from 'typeorm';
 import { CoreEntity } from '../../../../common/entities/common.entity';
 import { User } from '../../../auth/entities/user.entity';
 
@@ -16,4 +16,10 @@ export class Follow extends CoreEntity {
     onDelete: 'CASCADE',
   })
   following: User;
+
+  @Column()
+  followingId: string;
+
+  @Column()
+  followerId: string;
 }

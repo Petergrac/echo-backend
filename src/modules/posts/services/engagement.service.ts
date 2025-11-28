@@ -22,7 +22,7 @@ import { PostResponseDto } from '../dto/post-response.dto';
 import { UserResponseDto } from '../../auth/dto/user-response.dto';
 import { ReplyResponseDto } from '../dto/reply-response.dto';
 import { MentionService } from './mention.service';
-import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { HashtagService } from './hashtag.service';
 
@@ -408,10 +408,13 @@ export class EngagementService {
       //* 4.1 Send notification
       await this.notificationService.createNotification({
         type: NotificationType.REPLY,
-        recipientId: savedReply.authorId,
+        recipientId: post.authorId,
         actorId: userId,
         postId: postId,
         replyId: savedReply.id,
+        metadata: {
+          content: savedReply.content,
+        },
       });
 
       //* <<<<<<<<<<<< EXTRACT MENTION & HASHTAG >>>>>>>>>>>>>>>>>>>>>>>
@@ -600,6 +603,9 @@ export class EngagementService {
         actorId: userId,
         postId: postId,
         replyId: updatedReply.id,
+        metadata: {
+          content: updatedReply.content,
+        },
       });
       //* <<<<<<<<<<<< EXTRACT MENTION & HASHTAG >>>>>>>>>>>>>>>>>>>>>>>
       const hashtags = this.hashTagService.extractHashtags(updateDto.content);
@@ -844,7 +850,7 @@ export class EngagementService {
         //* 4.1 Send notification
         await this.notificationService.createNotification({
           type: NotificationType.REPOST,
-          recipientId: originalPost.author.id,
+          recipientId: originalPost.authorId,
           actorId: userId,
           postId: postId,
         });

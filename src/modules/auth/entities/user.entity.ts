@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, OneToMany, OneToOne } from 'typeorm';
 import { CoreEntity } from '../../../common/entities/common.entity';
 import { EmailToken } from './email-token.entity';
 import { RefreshToken } from './refresh-token.entity';
@@ -9,6 +9,7 @@ import { Bookmark } from '../../posts/entities/bookmark.entity';
 import { Reply } from '../../posts/entities/reply.entity';
 import { Repost } from '../../posts/entities/repost.entity';
 import { Mention } from '../../posts/entities/mention.entity';
+import { NotificationPreferences } from '../../notifications/entities/notification-preferences.entity';
 
 export enum UserRole {
   USER = 'user',
@@ -59,6 +60,12 @@ export class User extends CoreEntity {
   /**
    * TODO ================ RELATIONS =======
    */
+  @OneToOne(() => NotificationPreferences, (preference) => preference.user, {
+    cascade: true,
+    eager: true,
+  })
+  notificationPreferences: NotificationPreferences;
+
   @OneToMany(() => RefreshToken, (t) => t.user, {
     cascade: ['soft-remove', 'recover'],
   })

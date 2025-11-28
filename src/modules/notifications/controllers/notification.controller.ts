@@ -10,8 +10,8 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { NotificationsService } from './notifications.service';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { NotificationsService } from '../services/notifications.service';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
@@ -67,13 +67,5 @@ export class NotificationsController {
     const userId = (req.user as { userId: string }).userId;
     await this.notificationsService.deleteNotification(notificationId, userId);
     return { message: 'Notification deleted successfully' };
-  }
-
-  //TODO ==================== GET NOTIFICATION PREFERENCES ====================
-  @Get('preferences')
-  async getPreferences(@Req() req: Request) {
-    const userId = (req.user as { userId: string }).userId;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return this.notificationsService.getNotificationPreferences(userId);
   }
 }

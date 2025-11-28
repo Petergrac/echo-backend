@@ -9,21 +9,27 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, IsNull } from 'typeorm';
-import { Notification, NotificationType } from './entities/notification.entity';
-import { User } from '../auth/entities/user.entity';
-import { Post } from '../posts/entities/post.entity';
-import { Reply } from '../posts/entities/reply.entity';
+import {
+  Notification,
+  NotificationType,
+} from '../entities/notification.entity';
+import { User } from '../../auth/entities/user.entity';
+import { Post } from '../../posts/entities/post.entity';
+import { Reply } from '../../posts/entities/reply.entity';
 import { plainToInstance } from 'class-transformer';
-import { NotificationResponseDto } from './dto/response-notification.dto';
-import { NotificationsGateway } from './notifications.gateway';
+import { NotificationResponseDto } from '../dto/response-notification.dto';
+import { NotificationsGateway } from '../gateway/notifications.gateway';
+import { NotificationPreferenceService } from './notification-preference.service';
 
-interface CreateNotificationData {
+export interface CreateNotificationData {
   type: NotificationType;
   recipientId: string;
   actorId: string;
   postId?: string;
   replyId?: string;
-  metadata?: any;
+  metadata?: {
+    content: string;
+  };
 }
 
 export interface PaginationInfo {
@@ -49,6 +55,7 @@ export class NotificationsService {
     //* Services
     @Inject(forwardRef(() => NotificationsGateway))
     private readonly notificationGateway: NotificationsGateway,
+    private readonly preferenceService: NotificationPreferenceService,
   ) {}
 
   //TODO ==================== CREATE NOTIFICATION ====================
@@ -95,6 +102,19 @@ export class NotificationsService {
         return null;
       }
 
+      //* 6.Check notification preference before creating
+      const permission = await this.preferenceService.isNotificationAllowed(
+        data.recipientId,
+        data.type,
+        data.actorId,
+        data.metadata?.content,
+      );
+      if (!permission.allowed) {
+        this.logger.log(
+          `Notification blocked by preferences: ${permission.reason},type: ${data.type}, recipient: ${data.recipientId}`,
+        );
+        return undefined;
+      }
       //* 6. Check for duplicate notifications (within last 5 minutes)
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
       const existingNotification = await this.notificationRepo.findOne({
@@ -418,20 +438,6 @@ export class NotificationsService {
       }
 
       await queryRunner.commitTransaction();
-      //* SEND BATCH NOTIFICATIONS VIA WEBSOCKETS
-      userNotifications.forEach((notifications, userId) => {
-        notifications.forEach((notification) => {
-          this.notificationGateway
-            .sendNotificationToUser(userId, notification)
-            .catch((error) =>
-              this.logger.error(
-                `Failed to send batch ws notification to ${userId}:`,
-                error,
-              ),
-            );
-        });
-      });
-      this.logger.log(`Created ${createdCount} batch notifications`);
       return createdCount;
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -439,35 +445,6 @@ export class NotificationsService {
       throw error;
     } finally {
       await queryRunner.release();
-    }
-  }
-
-  //TODO ==================== GET NOTIFICATION PREFERENCES ====================
-  async getNotificationPreferences(userId: string): Promise<any> {
-    //* Placeholder for notification preferences system
-    //* You can extend this later with a proper UserPreferences entity
-    try {
-      const user = await this.userRepo.findOneBy({ id: userId });
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      //* Default preferences
-      return {
-        likes: true,
-        replies: true,
-        reposts: true,
-        follows: true,
-        mentions: true,
-        system: true,
-        emailDigest: false,
-        pushNotifications: true,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error getting notification preferences: ${error.message}`,
-      );
-      throw error;
     }
   }
 

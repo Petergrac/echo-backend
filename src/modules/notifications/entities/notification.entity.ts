@@ -45,7 +45,7 @@ export class Notification extends CoreEntity {
   read: boolean;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata: any;
+  metadata: Record<any, any>;
 
   shouldSendRealTime(): boolean {
     return this.type !== NotificationType.SYSTEM;

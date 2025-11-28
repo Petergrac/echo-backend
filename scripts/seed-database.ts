@@ -23,6 +23,7 @@ import { Follow } from '../src/modules/users/follow/entities/follow.entity';
 import { Like } from '../src/modules/posts/entities/post-like.entity';
 import { RefreshToken } from '../src/modules/auth/entities/refresh-token.entity';
 import { EmailToken } from '../src/modules/auth/entities/email-token.entity';
+import { NotificationPreferences } from '../src/modules/notifications/entities/notification-preferences.entity';
 
 class DatabaseSeeder {
   private dataSource: DataSource;
@@ -32,7 +33,6 @@ class DatabaseSeeder {
   private readonly MAX_LIKES_PER_POST = 25;
   private readonly MAX_REPLIES_PER_POST = 15;
   private readonly MAX_REPOSTS_PER_POST = 10;
-  private readonly MAX_BOOKMARKS_PER_POST = 8;
 
   // Popular hashtags for realistic content
   private readonly POPULAR_HASHTAGS = [
@@ -105,10 +105,11 @@ class DatabaseSeeder {
         PostHashtag,
         Mention,
         Follow,
+        NotificationPreferences,
         RefreshToken,
-        EmailToken
+        EmailToken,
       ],
-      
+
       synchronize: false,
       logging: true,
     });
@@ -553,6 +554,58 @@ class DatabaseSeeder {
 
     console.log(`✅ Created ${reposts.length} reposts`);
   }
+  // ==================== CREATE NOTIFICATION PREFERENCES ====================
+  async createNotificationPreferences(users: User[]) {
+    console.log('🔔 Creating notification preferences...');
+    const prefRepo = this.dataSource.getRepository(NotificationPreferences);
+    const prefs: NotificationPreferences[] = [];
+
+    for (const user of users) {
+      const pref = prefRepo.create({
+        user,
+        userId: user.id,
+        // In-app notifications (default true)
+        likes: true,
+        posts: true,
+        replies: true,
+        reposts: true,
+        follows: true,
+        mentions: true,
+        system: true,
+        // Email notifications (mostly false)
+        emailLikes: false,
+        emailReplies: false,
+        emailReposts: false,
+        emailFollows: false,
+        emailMentions: false,
+        emailSystem: true,
+        emailDigest: true,
+        // Push notifications
+        pushLikes: true,
+        pushReplies: true,
+        pushReposts: true,
+        pushFollows: true,
+        pushMentions: true,
+        pushSystem: true,
+        // Additional
+        soundEnabled: true,
+        vibrationEnabled: true,
+        deliveryTiming: 'immediate',
+        mutedUsers: [],
+        mutedKeywords: [],
+      });
+      prefs.push(pref);
+    }
+
+    // Save in batches
+    const batchSize = 50;
+    for (let i = 0; i < prefs.length; i += batchSize) {
+      const batch = prefs.slice(i, i + batchSize);
+      await prefRepo.save(batch);
+    }
+
+    console.log(`✅ Created ${prefs.length} notification preferences`);
+  }
 
   //TODO ==================== CREATE REPLIES ====================
   async createReplies(users: User[], posts: Post[]) {
@@ -706,6 +759,7 @@ class DatabaseSeeder {
       await this.clearDatabase();
 
       const users = await this.createUsers();
+      await this.createNotificationPreferences(users)
       await this.createFollows(users);
 
       const hashtags = await this.createHashtags();

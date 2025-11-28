@@ -12,13 +12,23 @@ import {
   WebSocketServer,
   WsException,
 } from '@nestjs/websockets';
-import { NotificationsService } from './notifications.service';
+import { NotificationsService } from '../services/notifications.service';
 import { Server, Socket } from 'socket.io';
-import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../auth/entities/user.entity';
+import { User } from '../../auth/entities/user.entity';
+import { NotificationPreferenceService } from '../services/notification-preference.service';
+import { plainToInstance } from 'class-transformer';
+import { NotificationPreferencesResponseDto } from '../dto/response-preferences.dto';
 
 interface OnlineUser {
   socketId: string;
@@ -27,6 +37,14 @@ interface OnlineUser {
   connectedAt: Date;
 }
 
+@UsePipes(
+  new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+    transformOptions: { enableImplicitConversion: true },
+  }),
+)
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -48,6 +66,7 @@ export class NotificationsGateway
     @Inject(forwardRef(() => NotificationsService))
     private readonly notificationsService: NotificationsService,
     private readonly jwtService: JwtService,
+    private readonly prefService: NotificationPreferenceService,
   ) {}
   //TODO ===============... AFTER INIT ====================
   afterInit() {
@@ -65,12 +84,12 @@ export class NotificationsGateway
       client.data.user = payload;
       const user = client.data.user as { sub: string };
       //* Get Username from the database
-      const userFromDatabase = await this.userRepo.findOne({
-        where: { id: user.sub },
-        select: {
-          username: true,
-        },
-      });
+      const userFromDatabase = await this.userRepo
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.notificationPreferences', 'prefs')
+        .where('user.id = :id', { id: user.sub })
+        .andWhere('user.deletedAt IS NULL')
+        .getOne();
       if (!userFromDatabase) throw new WsException('User not found');
       //* 1.Store user connections
       this.onlineUsers.set(client.id, {
@@ -138,20 +157,14 @@ export class NotificationsGateway
     }
   }
 
-  //TODO ================ SEND NOTIFICATION TO MULTIPLE USERS =====================
-  sendNotificationsToUsers(userIds: string[], notification: any) {
-    try {
-      userIds.forEach((userId) => {
-        this.server.to(`user:${userId}`).emit('new_notification', {
-          ...notification,
-          timestamp: new Date().toISOString(),
-        });
-      });
-      this.logger.log(`📤 Sent notification to ${userIds.length} users`);
-    } catch (error) {
-      this.logger.error(`Error sending notification to multiple users:`, error);
-    }
-  }
+  /**
+   * TODO ===================================================================================
+   * @param client
+   * TODO <<<<<<<<<<<<<<<<<<< CLIENT-SERVER CONNECTIONS (ENDPOINTS) >>>>>>>>>>>>>>>>>>>>>>>>>
+   * @param data
+   * TODO ===================================================================================
+   */
+
   //TODO ============== MARK NOTIFICATION AS READ(VIA SOCKET) =============
   @SubscribeMessage('mark_notification_read')
   async handleMarkNotificationRead(
@@ -160,11 +173,11 @@ export class NotificationsGateway
   ) {
     try {
       //* 1.Get userId from the payload
-      const user = client.data.user as { userId: string };
+      const user = client.data.user as { sub: string };
       //* 2.Update the notification
       const updatedNotification = await this.notificationsService.markAsRead(
         data.notificationId,
-        user.userId,
+        user.sub,
       );
 
       //* 3.Send updated notification back to client
@@ -172,7 +185,7 @@ export class NotificationsGateway
 
       //* 4.Get & Send the notification unread count
       const unreadCount = await this.notificationsService.getUnreadCount(
-        user.userId,
+        user.sub,
       );
       client.emit('unread_count', { counts: unreadCount });
     } catch (error) {
@@ -186,9 +199,8 @@ export class NotificationsGateway
   async markAllNotificationsAsRead(@ConnectedSocket() client: Socket) {
     try {
       //* 1.Mark all notifications of a given user as read
-      const user = client.data.user as { userId: string };
-      console.log(user.userId);
-      const result = await this.notificationsService.markAllAsRead(user.userId);
+      const user = client.data.user as { sub: string };
+      const result = await this.notificationsService.markAllAsRead(user.sub);
 
       //* 2.Send Confirmation
       client.emit('mark_all_as_read', {
@@ -212,10 +224,10 @@ export class NotificationsGateway
     @MessageBody() data: { conversationId: string },
   ) {
     try {
-      const user = client.data.user as { userId: string };
+      const user = client.data.user as { sub: string };
       //* 1.Broadcast to other users in the conversation
       client.to(data.conversationId).emit('user_typing', {
-        userId: user.userId,
+        userId: user.sub,
         conversationId: data.conversationId,
       });
     } catch (error) {
@@ -228,10 +240,10 @@ export class NotificationsGateway
     @MessageBody() data: { conversationId: string },
   ) {
     try {
-      const user = client.data.user as { userId: string };
-      // Broadcast to other users in conversation
+      const user = client.data.user as { sub: string };
+      //* Broadcast to other users in conversation
       client.to(data.conversationId).emit('user_stopped_typing', {
-        userId: user.userId,
+        userId: user.sub,
         conversationId: data.conversationId,
       });
     } catch (error) {
@@ -245,7 +257,6 @@ export class NotificationsGateway
     @MessageBody() data: { userIds: string[] },
   ) {
     try {
-      console.log(this.onlineUsers);
       const onlineStatus = data.userIds.map((userId) => ({
         userId,
         isOnline: this.isUserOnline(userId),
@@ -261,6 +272,30 @@ export class NotificationsGateway
     client.emit('pong', { timestamp: Date.now() });
   }
 
+  //TODO =============== GET USER PREFERENCES ====================
+  @SubscribeMessage('get_my_preferences')
+  async getUserPreferences(@ConnectedSocket() client: Socket) {
+    const user = client.data.user as { sub: string };
+    const response = await this.prefService.getUserPreferences(user.sub);
+    return plainToInstance(NotificationPreferencesResponseDto, response, {
+      excludeExtraneousValues: true,
+    });
+  }
+  //TODO ================== RESET PREFERENCES ===============
+  @SubscribeMessage('reset_notifications')
+  async resetNotifications(@ConnectedSocket() client: Socket) {
+    const user = client.data.user as { sub: string };
+    return await this.prefService.resetToDefaults(user.sub);
+  }
+  //TODO ================ CHECK PREFERENCE TYPE ============
+  @SubscribeMessage('check_permission')
+  async checkPermission(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() dto: { type: string },
+  ) {
+    const user = client.data.user as { sub: string };
+    return await this.prefService.isNotificationAllowed(user.sub, dto.type);
+  }
   //? ==================== UTILITY METHODS ====================
 
   //* Check if user is online
