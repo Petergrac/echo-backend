@@ -39,6 +39,7 @@ export enum AuditAction {
   POST_REPOSTED = 'POST_REPOSTED',
   POST_UNREPOSTED = 'POST_UNREPOSTED',
   REPLY_DELETED = 'REPLY_DELETED',
+  REPLY_UPDATED = 'REPLY_UPDATED',
 }
 
 export enum AuditResource {

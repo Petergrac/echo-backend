@@ -381,7 +381,7 @@ export class PostsService {
         { userId },
       )
       .leftJoinAndSelect('post.media', 'media')
-      .leftJoinAndSelect('post.author', 'postAuthor')
+      .leftJoin('post.author', 'postAuthor')
       .where('post.deletedAt IS NULL')
       .andWhere('(post.authorId = :userId OR followers.followerId = :userId)', {
         userId,

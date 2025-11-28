@@ -10,3 +10,14 @@ export class CreateReplyDto {
   @IsOptional()
   parentReplyId?: string;
 }
+
+export class UpdateReplyDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(280, { message: 'reply size exceeded 280 characters' })
+  content: string;
+
+  @IsString()
+  @IsOptional()
+  parentReplyId?: string;
+}

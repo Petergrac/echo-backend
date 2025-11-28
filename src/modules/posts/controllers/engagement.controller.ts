@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -15,7 +16,7 @@ import {
 import { EngagementService } from '../services/engagement.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { Request } from 'express';
-import { CreateReplyDto } from '../dto/create-reply.dto';
+import { CreateReplyDto, UpdateReplyDto } from '../dto/create-reply.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { FileValidationPipe } from '../pipes/file-validation.pipe';
 import { CreateRepostDto } from '../dto/create-repost.dto';
@@ -99,7 +100,7 @@ export class EngagementController {
    */
   //TODO ================ CREATE A REPLY ================
   @Post('posts/:id/reply')
-  @UseInterceptors(FilesInterceptor('media', 3))
+  @UseInterceptors(FilesInterceptor('media', 2))
   async createReply(
     @Req()
     req: Request,
@@ -119,7 +120,30 @@ export class EngagementController {
       userAgent,
     );
   }
-
+  //TODO ===================== PATCH A REPLY ===================
+  @Patch('posts/:id/:replyId')
+  @UseInterceptors(FilesInterceptor('media', 2))
+  async patchReply(
+    @Req()
+    req: Request,
+    @Body() dto: UpdateReplyDto,
+    @Param('id', new ParseUUIDPipe()) postId: string,
+    @Param('replyId', new ParseUUIDPipe()) replyId: string,
+    @UploadedFiles(FileValidationPipe) files: Express.Multer.File[],
+  ) {
+    const userId = (req.user as { userId: string }).userId;
+    const ip = req.ip;
+    const userAgent = req.get('user-agent');
+    return await this.engagementService.patchReply(
+      postId,
+      userId,
+      dto,
+      replyId,
+      files,
+      ip,
+      userAgent,
+    );
+  }
   //TODO =================== GET REPLIES OF A GIVEN POST
   @Get('posts/:id/replies')
   async getPostReplies(
@@ -152,7 +176,7 @@ export class EngagementController {
 
   /**
    *
-   * TODO       <<<<<<<<<<<<<<<<<< REPOST ENDPOINTS >>>>>>>>>>>>>>>>>>>>>>
+   * TODO  <<<<<<<<<<<<<<<<<< REPOST ENDPOINTS >>>>>>>>>>>>>>>>>>>>>>
    * *========                                                  ================>
    *
    */

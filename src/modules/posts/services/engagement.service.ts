@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, IsNull } from 'typeorm';
@@ -12,7 +13,7 @@ import { Reply } from '../entities/reply.entity';
 import { Repost } from '../entities/repost.entity';
 import { Post } from '../entities/post.entity';
 import { Media } from '../entities/media.entity';
-import { CreateReplyDto } from '../dto/create-reply.dto';
+import { CreateReplyDto, UpdateReplyDto } from '../dto/create-reply.dto';
 import { CreateRepostDto } from '../dto/create-repost.dto';
 import { Like } from '../entities/post-like.entity';
 import { AuditAction, AuditResource } from '../../../common/enums/audit.enums';
@@ -452,6 +453,189 @@ export class EngagementService {
 
       const replyWithRelation = await this.getReplyWithRelations(savedReply.id);
 
+      return plainToInstance(ReplyResponseDto, replyWithRelation, {
+        excludeExtraneousValues: true,
+        exposeUnsetFields: false,
+      });
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+
+      //* 8. Cleanup uploaded files on failure
+      if (uploadedResponse.length > 0) {
+        await Promise.allSettled(
+          uploadedResponse.map((m) =>
+            this.cloudinary.deleteFile(m.publicId, m.resourceType),
+          ),
+        );
+      }
+      console.log(error);
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+  /**
+   * TODO =========<<<<<<<<<< UPDATE EXISTING REPLY ====================
+   * @param postId
+   * @param userId
+   * @param updateDto
+   * @param replyId
+   * @param files
+   * @param ip
+   * @param userAgent
+   * @returns
+   */
+  async patchReply(
+    postId: string,
+    userId: string,
+    updateDto: UpdateReplyDto,
+    replyId: string,
+    files?: Express.Multer.File[],
+    ip?: string,
+    userAgent?: string,
+  ) {
+    const queryRunner = this.dataSource.manager.connection.createQueryRunner();
+    queryRunner.connect();
+    queryRunner.startTransaction();
+
+    let uploadedResponse: {
+      url: string;
+      resourceType: string;
+      publicId: string;
+    }[] = [];
+    try {
+      //* 1.Check if that reply exist
+      const originalReply = await this.replyRepo.findOne({
+        where: {
+          id: replyId,
+        },
+        select: {
+          id: true,
+          authorId: true,
+          media: true,
+        },
+        relations: ['media'],
+      });
+      if (!originalReply) throw new NotFoundException('Reply not found');
+      //* 2.Check if the given post exist
+      const post = await this.postRepo.findOne({
+        where: {
+          id: postId,
+        },
+        select: {
+          id: true,
+          authorId: true,
+        },
+      });
+      if (!post) throw new NotFoundException('Post not found');
+      //* 3.Verify if the parent reply is available (if provided)
+      if (updateDto.parentReplyId) {
+        const parentReply = await this.replyRepo.findOne({
+          where: {
+            id: updateDto.parentReplyId,
+          },
+        });
+        if (parentReply)
+          throw new NotFoundException('Parent  reply not found not found');
+      }
+      //* 4.1Upload and delete old media files => if provided & available
+      if (files && files.length > 0) {
+        //* 4.1 Upload new media
+        const uploadPromises = files.map((file) =>
+          this.cloudinary.uploadFile(file),
+        );
+        //* ==> Parallel Upload
+        const uploadResponse = await Promise.all(uploadPromises);
+        uploadedResponse = uploadResponse.map((result) => ({
+          url: result.secure_url || result.url,
+          resourceType: result.resource_type,
+          publicId: result.public_id,
+        }));
+        //* 4.2 Check if the original reply had media
+        if (originalReply.media.length > 0) {
+          //? Delete the old media files
+          const allDeletePromises = originalReply.media.flatMap((media) => [
+            //* Database delete
+            queryRunner.manager.softDelete(Media, { id: media.id }),
+            //* Cloudinary delete
+            this.cloudinary.deleteFile(media.publicId, media.resourceType),
+          ]);
+          //* Execute ALL in parallel
+          await Promise.allSettled(allDeletePromises);
+        }
+      }
+      //* 5.Update the existing reply
+      const reply = this.replyRepo.create({
+        content: updateDto.content,
+        parentReply: updateDto.parentReplyId
+          ? { id: updateDto.parentReplyId }
+          : undefined,
+        post: { id: postId },
+        author: { id: userId },
+      });
+      await queryRunner.manager.update(Reply, { id: replyId }, reply);
+      const updatedReply = await this.replyRepo.findOne({
+        where: { id: replyId },
+      });
+      //* 6.Save media files if they exist
+      if (updatedReply && uploadedResponse.length > 0) {
+        const mediaEntities = uploadedResponse.map((media) =>
+          this.mediaRepo.create({
+            mediaUrl: media.url,
+            publicId: media.publicId,
+            resourceType: media.resourceType,
+            reply: { id: updatedReply.id },
+          }),
+        );
+        await queryRunner.manager.save(Media, mediaEntities);
+      }
+      if (!updatedReply)
+        throw new ConflictException('Post could not be updated');
+      await queryRunner.commitTransaction();
+      //todo---<<<>> SEND NOTIFICATION TO AUTHOR, SOMEONE REPLIED YOUR POST
+      //* 4.1 Send notification
+      await this.notificationService.createNotification({
+        type: NotificationType.REPLY,
+        recipientId: updatedReply.authorId,
+        actorId: userId,
+        postId: postId,
+        replyId: updatedReply.id,
+      });
+      //* <<<<<<<<<<<< EXTRACT MENTION & HASHTAG >>>>>>>>>>>>>>>>>>>>>>>
+      const hashtags = this.hashTagService.extractHashtags(updateDto.content);
+      const mentions = this.mentionService.extractMentions(updateDto.content);
+      //*<><><><> Save hashtags and mentions
+
+      if (hashtags.length > 0) {
+        await this.hashTagService.createHashtags(hashtags, postId);
+      }
+      if (mentions.length > 0) {
+        //* Will send notification inside the mention
+        await this.mentionService.createMentions(
+          mentions,
+          postId,
+          userId,
+          updatedReply.id,
+        );
+      }
+      //* 7. Audit log
+      await this.auditService.createLog({
+        action: AuditAction.REPLY_UPDATED,
+        resource: AuditResource.REPLY,
+        userId,
+        ip,
+        userAgent,
+        metadata: {
+          postId,
+          replyId: updatedReply.id,
+          parentReplyId: updateDto.parentReplyId,
+          mediaCount: uploadedResponse.length,
+        },
+      });
+
+      const replyWithRelation = await this.getReplyWithRelations(
+        updatedReply.id,
+      );
       return plainToInstance(ReplyResponseDto, replyWithRelation, {
         excludeExtraneousValues: true,
         exposeUnsetFields: false,
