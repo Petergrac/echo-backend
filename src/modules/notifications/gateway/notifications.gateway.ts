@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   ConnectedSocket,
@@ -217,39 +216,6 @@ export class NotificationsGateway
       });
     }
   }
-  //TODO ==================== TYPING INDICATORS (FOR CHATS) =====================
-  @SubscribeMessage('typing_start')
-  handleTypingStart(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string },
-  ) {
-    try {
-      const user = client.data.user as { sub: string };
-      //* 1.Broadcast to other users in the conversation
-      client.to(data.conversationId).emit('user_typing', {
-        userId: user.sub,
-        conversationId: data.conversationId,
-      });
-    } catch (error) {
-      this.logger.error(`Error handling typing start:`, error);
-    }
-  }
-  @SubscribeMessage('typing_stop')
-  handleTypingStop(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string },
-  ) {
-    try {
-      const user = client.data.user as { sub: string };
-      //* Broadcast to other users in conversation
-      client.to(data.conversationId).emit('user_stopped_typing', {
-        userId: user.sub,
-        conversationId: data.conversationId,
-      });
-    } catch (error) {
-      this.logger.error(`Error handling typing stop:`, error);
-    }
-  }
   //TODO====================== GET ONLINE STATUS ====================
   @SubscribeMessage('get_online_status')
   handleGetOnlineStatus(
@@ -305,20 +271,6 @@ export class NotificationsGateway
     );
   }
 
-  //* Get all online users
-  getOnlineUsers(): OnlineUser[] {
-    return Array.from(this.onlineUsers.values());
-  }
-
-  //* Get user's socket IDs
-  getUserSocketIds(userId: string): string[] {
-    return (
-      Array.from(this.onlineUsers.entries())
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .filter(([_, user]) => user.userId === userId)
-        .map(([socketId]) => socketId)
-    );
-  }
   private extractTokenFromHeader(client: Socket): string | undefined {
     //* 1. Try socket.io auth payload
     const authToken = client.handshake.auth?.token;
@@ -331,7 +283,6 @@ export class NotificationsGateway
     if (header) {
       return header;
     }
-
     return undefined;
   }
 }

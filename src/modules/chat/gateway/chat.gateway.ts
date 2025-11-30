@@ -7,7 +7,7 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Logger, UsePipes, ValidationPipe } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ChatService } from '../services/chat.service';
@@ -16,11 +16,20 @@ import { SendMessageDto } from '../dto/send-message.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../../auth/entities/user.entity';
 import { Repository } from 'typeorm';
+import { JoinConversationDto } from '../dto/join-conversation.dto';
 
 interface AuthenticatedSocket extends Socket {
   user: { userId: string; username: string };
 }
 
+@UsePipes(
+  new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+    transformOptions: { enableImplicitConversion: true },
+  }),
+)
 @WebSocketGateway({
   cors: {
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -57,15 +66,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      const payload: { sub: string; role: string } =
-        await this.jwtService.verify(token.replace('Bearer ', ''));
+      const payload: { sub: string } = await this.jwtService.verify(
+        token.replace('Bearer ', ''),
+        {
+          secret: process.env.JWT_SECRET,
+        },
+      );
       //* 2.Fetch the user from the database
       const user = await this.userRepo.findOne({
         where: {
           id: payload.sub,
-        },
-        select: {
-          username: true,
         },
       });
       if (!user) {
@@ -81,7 +91,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       socket.join(`user:${socket.user.userId}`);
 
       this.logger.log(
-        `User ${socket.user.userId} connected with socket ${socket.id} 👏👏`,
+        `User ${socket.user.username} connected with socket ${socket.id} 👏👏`,
       );
 
       //* 5.Notify user of successful connection
@@ -91,6 +101,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
     } catch (error) {
       this.logger.error(`WebSocket connection failed: ${error.message}`);
+      console.log(error);
       socket.disconnect();
     }
   }
@@ -107,9 +118,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('join_conversation')
   async handleJoinConversation(
     @ConnectedSocket() socket: AuthenticatedSocket,
-    @MessageBody() data: { conversationId: string },
+    @MessageBody() data: JoinConversationDto,
   ) {
     try {
+      console.log(Object.keys(data));
       //* 1.Verify user is participant of conversation
       await this.chatService.getConversation(
         data.conversationId,

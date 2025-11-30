@@ -18,9 +18,9 @@ import { ChatService } from '../services/chat.service';
 import { MessagesService } from '../services/message.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CreateConversationDto } from '../dto/create-conversation.dto';
-import { UpdateConversationDto } from '../dto/update-conversation.dto';
+import { UpdateConversationDto } from '../dto/update-dtos/update-conversation.dto';
 import { SendMessageDto } from '../dto/send-message.dto';
-import { AddParticipantsDto } from '../dto/add-participants.dto';
+import { AddParticipantsDto } from '../dto/update-dtos/add-participants.dto';
 import type { Request } from 'express';
 import { FileValidationPipe } from '../pipes/file-validation.pipe';
 

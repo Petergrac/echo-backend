@@ -14,8 +14,10 @@ import {
 import { ConversationParticipant } from '../entities/conversation-participant.entity';
 import { User } from '../../auth/entities/user.entity';
 import { CreateConversationDto } from '../dto/create-conversation.dto';
-import { UpdateConversationDto } from '../dto/update-conversation.dto';
-import { AddParticipantsDto } from '../dto/add-participants.dto';
+import { UpdateConversationDto } from '../dto/update-dtos/update-conversation.dto';
+import { AddParticipantsDto } from '../dto/update-dtos/add-participants.dto';
+import { plainToInstance } from 'class-transformer';
+import { ConversationResponseDto } from '../dto/response-dtos/conversation-response.dto';
 
 @Injectable()
 export class ChatService {
@@ -141,7 +143,6 @@ export class ChatService {
         )
         .leftJoinAndSelect('conversation.participants', 'allParticipants')
         .leftJoinAndSelect('allParticipants.user', 'user')
-        .leftJoinAndSelect('conversation.lastMessage', 'lastMessage')
         .where('participant.isActive = :isActive', { isActive: true })
         .andWhere('conversation.lastMessageAt IS NOT NULL')
         .orderBy('conversation.lastMessageAt', 'DESC')
@@ -150,7 +151,9 @@ export class ChatService {
         .getManyAndCount();
 
       return {
-        conversations,
+        conversations: plainToInstance(ConversationResponseDto, conversations, {
+          excludeExtraneousValues: true,
+        }),
         pagination: {
           currentPage: page,
           totalPages: Math.ceil(total / limit),
@@ -169,7 +172,7 @@ export class ChatService {
   async getConversation(
     conversationId: string,
     userId: string,
-  ): Promise<Conversation> {
+  ): Promise<ConversationResponseDto> {
     try {
       const conversation = await this.conversationRepo
         .createQueryBuilder('conversation')
@@ -185,7 +188,9 @@ export class ChatService {
         throw new NotFoundException('Conversation not found or access denied');
       }
 
-      return conversation;
+      return plainToInstance(ConversationResponseDto, conversation, {
+        excludeExtraneousValues: true,
+      });
     } catch (error) {
       this.logger.error(`Error getting conversation: ${error.message}`);
       throw error;

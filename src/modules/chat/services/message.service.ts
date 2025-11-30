@@ -20,6 +20,9 @@ import { ConversationParticipant } from '../entities/conversation-participant.en
 import { SendMessageDto } from '../dto/send-message.dto';
 import { CloudinaryService } from '../../../common/cloudinary/cloudinary.service';
 import { UploadApiResponse } from 'cloudinary';
+import { plainToInstance } from 'class-transformer';
+import { MessageResponseDto } from '../dto/response-dtos/message-response.dto';
+import { ReactionResponseDto } from '../dto/response-dtos/reaction-response.dto';
 
 export interface PaginatedMessages {
   messages: Message[];
@@ -56,7 +59,7 @@ export class MessagesService {
     senderId: string,
     sendDto: SendMessageDto,
     file?: Express.Multer.File,
-  ): Promise<Message | null> {
+  ): Promise<MessageResponseDto | null> {
     const queryRunner = this.messageRepo.manager.connection.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -161,7 +164,13 @@ export class MessagesService {
       this.logger.log(
         `Message sent in conversation ${conversationId} by user ${senderId}`,
       );
-      return this.getMessageWithRelations(savedMessage.id);
+      return plainToInstance(
+        MessageResponseDto,
+        this.getMessageWithRelations(savedMessage.id),
+        {
+          excludeExtraneousValues: true,
+        },
+      );
     } catch (error) {
       await queryRunner.rollbackTransaction();
       this.logger.error(`Error sending message: ${error.message}`);
@@ -178,7 +187,7 @@ export class MessagesService {
     page: number = 1,
     limit: number = 50,
     before?: Date,
-  ): Promise<PaginatedMessages> {
+  ) {
     try {
       //* 1. Verify user is participant
       const participant = await this.participantRepo.findOne({
@@ -228,7 +237,9 @@ export class MessagesService {
       );
 
       return {
-        messages: messages.reverse(), // Return in chronological order
+        messages: plainToInstance(MessageResponseDto, messages.reverse(), {
+          excludeExtraneousValues: true,
+        }), // Return in chronological order
         pagination: {
           currentPage: page,
           totalPages: Math.ceil(total / limit),
@@ -298,7 +309,7 @@ export class MessagesService {
         .andWhere('readReceipts.id IS NULL') // Messages without read receipts
         .andWhere('message.senderId != :userId', { userId }) // Don't count own messages
         .andWhere(
-          '(message.deletedForUserId IS NULL OR message.deletedForUserId != :userId)',
+          '(message.deletedForUserId IS NULL OR (message.deletedForUserId)::uuid != :userId)',
           { userId },
         )
         .getCount();
@@ -396,7 +407,7 @@ export class MessagesService {
     messageId: string,
     userId: string,
     emoji: string,
-  ): Promise<MessageReaction | null> {
+  ): Promise<ReactionResponseDto | null> {
     const queryRunner = this.messageRepo.manager.connection.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -455,7 +466,9 @@ export class MessagesService {
       this.logger.log(
         `Reaction ${emoji} added to message ${messageId} by user ${userId}`,
       );
-      return savedReaction;
+      return plainToInstance(ReactionResponseDto, savedReaction, {
+        excludeExtraneousValues: true,
+      });
     } catch (error) {
       await queryRunner.rollbackTransaction();
       this.logger.error(`Error adding reaction: ${error.message}`);

@@ -9,6 +9,7 @@ export enum MessageType {
   TEXT = 'text',
   IMAGE = 'image',
   VIDEO = 'video',
+  AUDIO = 'audio',
   FILE = 'file',
   SYSTEM = 'system', //? For system messages like "user joined"
 }
@@ -17,6 +18,7 @@ export enum MessageStatus {
   SENT = 'sent',
   DELIVERED = 'delivered',
   READ = 'read',
+  FAILED = 'failed',
 }
 
 @Entity()
