@@ -15,6 +15,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { Keyv } from 'keyv';
 import { CacheableMemory } from 'cacheable';
 import { ChatModule } from './modules/chat/chat.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { ChatModule } from './modules/chat/chat.module';
     PostsModule,
     UsersModule,
     ChatModule,
+    SearchModule,
   ],
   controllers: [HealthController],
   providers: [
