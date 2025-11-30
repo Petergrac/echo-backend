@@ -11,7 +11,7 @@ export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
   url: configService.getOrThrow('DATABASE_URL'),
   entities: ['dist/**/*.entity.{ts,js}'],
-  migrations: ['database/migrations/*.{.ts,.js}'],
+  migrations: ['database/*.{.ts,.js}'],
   synchronize: false,
   migrationsTableName: 'migrations',
   migrationsRun: false,

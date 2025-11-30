@@ -14,6 +14,7 @@ import KeyvRedis from '@keyv/redis';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Keyv } from 'keyv';
 import { CacheableMemory } from 'cacheable';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { CacheableMemory } from 'cacheable';
     AuthModule,
     PostsModule,
     UsersModule,
+    ChatModule,
   ],
   controllers: [HealthController],
   providers: [
