@@ -1,5 +1,4 @@
-// media.entity.ts
-import { Entity, Column, ManyToOne } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Post } from './post.entity';
 import { Reply } from './reply.entity';
 import { CoreEntity } from '../../../common/entities/common.entity';
@@ -34,6 +33,7 @@ export class Media extends CoreEntity {
     onDelete: 'CASCADE',
     nullable: true,
   })
+  @JoinColumn({ name: 'postId' })
   post: Post;
 
   @ManyToOne(() => Reply, (reply) => reply.media, {

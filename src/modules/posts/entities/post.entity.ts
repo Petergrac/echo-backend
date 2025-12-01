@@ -1,4 +1,11 @@
-import { Entity, Column, ManyToOne, OneToMany, Index } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  OneToMany,
+  Index,
+  JoinColumn,
+} from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
 import { CoreEntity } from '../../../common/entities/common.entity';
 import { Like } from './post-like.entity';
@@ -73,6 +80,7 @@ export class Post extends CoreEntity {
   mentions: Mention[];
 
   @ManyToOne(() => User, (user) => user.posts, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'authorId' })
   author: User;
 
   //TODO ======> VIRTUAL FIELDS <==========

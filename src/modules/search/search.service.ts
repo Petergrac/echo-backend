@@ -78,23 +78,26 @@ export class SearchService {
     try {
       const limit = filters.limit || 20;
       const offset = filters.offset || 0;
-
-      //* 1.Build base query with full-text search
+      //* 1.Create a base query
       let queryBuilder = this.userRepo
         .createQueryBuilder('user')
         .where('user.deletedAt IS NULL')
         .andWhere(
-          '(user.username ILIKE :query OR user.displayName ILIKE :query OR user.bio ILIKE :query)',
+          `(user.username ILIKE :query 
+      OR user.firstName ILIKE :query 
+      OR user.lastName ILIKE :query 
+      OR (user.firstName || ' ' || user.lastName) ILIKE :query 
+      OR user.bio ILIKE :query)`,
           { query: `%${query}%` },
         )
         .orderBy('user.createdAt', 'DESC')
         .skip(offset)
         .take(limit);
 
-      //* 2.Add relevance scoring based on match type
+      //* 2.@mention mode
       if (query.startsWith('@')) {
-        //? Exact username match for @mentions
         const exactUsername = query.replace('@', '');
+
         queryBuilder = this.userRepo
           .createQueryBuilder('user')
           .where('user.username ILIKE :exactUsername', {
@@ -108,13 +111,12 @@ export class SearchService {
 
       const users = await queryBuilder.getMany();
 
-      //* If user is authenticated, add follow status
       if (currentUserId) {
         return this.enrichUsersWithFollowStatus(users, currentUserId);
       }
-
       return users;
     } catch (error) {
+      console.log(error);
       this.logger.error(`Error searching users: ${error.message}`);
       throw error;
     }
@@ -186,6 +188,7 @@ export class SearchService {
 
       return posts;
     } catch (error) {
+      console.log(error);
       this.logger.error(`Error searching posts: ${error.message}`);
       throw error;
     }
@@ -223,6 +226,7 @@ export class SearchService {
 
       return await queryBuilder.getMany();
     } catch (error) {
+      console.log(error);
       this.logger.error(`Error searching hashtags: ${error.message}`);
       throw error;
     }
@@ -310,7 +314,6 @@ export class SearchService {
   ): Promise<Post[]> {
     try {
       const timeWindow = this.getTimeWindow(timeframe);
-
       const posts = await this.postRepo
         .createQueryBuilder('post')
         .leftJoinAndSelect('post.author', 'author')
@@ -332,6 +335,7 @@ export class SearchService {
 
       return posts;
     } catch (error) {
+      console.log(error);
       this.logger.error(`Error getting trending posts: ${error.message}`);
       throw error;
     }
@@ -345,29 +349,29 @@ export class SearchService {
       //* Get users followed by people you follow (2nd degree connections)
       const recommendedUsers = await this.userRepo
         .createQueryBuilder('user')
-        .leftJoin('user.followers', 'followers')
-        .leftJoin('followers.follower', 'follower')
-        .leftJoin('follower.following', 'mutualFollows')
+        .leftJoin('user.followers', 'followerRel') // alias the join table
+        .leftJoin('followerRel.follower', 'followerUser') // actual follower user
+        .leftJoin('followerUser.following', 'mutualFollows')
         .where('user.id != :userId', { userId })
         .andWhere('mutualFollows.followerId = :userId', { userId })
         .andWhere('user.deletedAt IS NULL')
-        .andWhere('user.isPrivate = :isPrivate', { isPrivate: false })
         .andWhere(
-          'user.id NOT IN (SELECT following_id FROM follow WHERE follower_id = :userId AND deleted_at IS NULL)',
+          'user.id NOT IN (SELECT "followingId" FROM follows WHERE "followerId" = :userId AND "deletedAt" IS NULL)',
           { userId },
         )
         .groupBy('user.id')
         .addGroupBy('user.username')
-        .addGroupBy('user.displayName')
         .addGroupBy('user.avatar')
         .addGroupBy('user.bio')
-        .orderBy('COUNT(followers.id)', 'DESC')
+        .addSelect('COUNT(followerRel.id)', 'followersCount') // explicit select for COUNT
+        .orderBy('followersCount', 'DESC') // use the alias
         .addOrderBy('user.createdAt', 'DESC')
         .take(limit)
         .getMany();
 
       return this.enrichUsersWithFollowStatus(recommendedUsers, userId);
     } catch (error) {
+      console.log(error);
       this.logger.error(`Error getting user recommendations: ${error.message}`);
       throw error;
     }
@@ -457,17 +461,15 @@ export class SearchService {
   }
 
   private getTimeWindow(timeframe: string): Date {
-    const now = new Date();
-    switch (timeframe) {
-      case 'day':
-        return new Date(now.setDate(now.getDate() - 1));
-      case 'week':
-        return new Date(now.setDate(now.getDate() - 7));
-      case 'month':
-        return new Date(now.setMonth(now.getMonth() - 1));
-      default:
-        return new Date(0); // Beginning of time
-    }
+    const d = new Date();
+
+    if (timeframe === 'day') d.setDate(d.getDate() - 1);
+    if (timeframe === 'week') d.setDate(d.getDate() - 7);
+    if (timeframe === 'month') d.setMonth(d.getMonth() - 1);
+    if (timeframe !== 'day' && timeframe !== 'week' && timeframe !== 'month')
+      return new Date(0);
+
+    return d;
   }
 
   private getPopularSearchQueries(query: string): string[] {
