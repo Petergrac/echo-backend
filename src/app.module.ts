@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ArcjetModule, detectBot, fixedWindow, shield } from '@arcjet/nest';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -6,7 +7,6 @@ import { CommonModule } from './common/module/common.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { HealthController } from './common/controllers/healthcare.controller';
 import { CustomArcjetGuard } from './common/guards/arcjet.guard';
 import { UsersModule } from './modules/users/users.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -16,9 +16,12 @@ import { Keyv } from 'keyv';
 import { CacheableMemory } from 'cacheable';
 import { ChatModule } from './modules/chat/chat.module';
 import { SearchModule } from './modules/search/search.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -80,15 +83,19 @@ import { SearchModule } from './modules/search/search.module';
     UsersModule,
     ChatModule,
     SearchModule,
+    AdminModule,
   ],
-  controllers: [HealthController],
   providers: [
     {
-      provide: 'APP_GUARD',
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter, //? Must start before all other filters
+    },
+    {
+      provide: APP_GUARD,
       useClass: CustomArcjetGuard,
     },
     {
-      provide: 'APP_GUARD',
+      provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
   ],

@@ -57,6 +57,21 @@ export class User extends CoreEntity {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
+  @Column({ default: false })
+  isModerator: boolean;
+
+  @Column({ default: false })
+  isBanned: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  bannedAt: Date;
+
+  @Column({ nullable: true })
+  banReason: string;
+
+  @Column({ type: 'jsonb', default: {} })
+  adminMetadata: any;
+
   /**
    * TODO ================ RELATIONS =======
    */

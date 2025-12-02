@@ -349,8 +349,8 @@ export class SearchService {
       //* Get users followed by people you follow (2nd degree connections)
       const recommendedUsers = await this.userRepo
         .createQueryBuilder('user')
-        .leftJoin('user.followers', 'followerRel') // alias the join table
-        .leftJoin('followerRel.follower', 'followerUser') // actual follower user
+        .leftJoin('user.followers', 'followerRel')
+        .leftJoin('followerRel.follower', 'followerUser')
         .leftJoin('followerUser.following', 'mutualFollows')
         .where('user.id != :userId', { userId })
         .andWhere('mutualFollows.followerId = :userId', { userId })
@@ -363,8 +363,8 @@ export class SearchService {
         .addGroupBy('user.username')
         .addGroupBy('user.avatar')
         .addGroupBy('user.bio')
-        .addSelect('COUNT(followerRel.id)', 'followersCount') // explicit select for COUNT
-        .orderBy('followersCount', 'DESC') // use the alias
+        .addSelect('COUNT(followerRel.id)', 'followersCount')
+        .orderBy('followersCount', 'DESC')
         .addOrderBy('user.createdAt', 'DESC')
         .take(limit)
         .getMany();
