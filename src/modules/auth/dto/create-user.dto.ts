@@ -19,11 +19,13 @@ export class CreateUserDto {
   })
   username: string;
 
-  @IsString()
-  firstName?: string;
+  @IsString({ message: 'Invalid first name' })
+  @MinLength(3, { message: 'Invalid first name' })
+  firstName: string;
 
-  @IsString()
-  lastName?: string;
+  @IsString({ message: 'Invalid last name' })
+  @MinLength(3, { message: 'Invalid last name' })
+  lastName: string;
 
   @IsOptional()
   @IsString()

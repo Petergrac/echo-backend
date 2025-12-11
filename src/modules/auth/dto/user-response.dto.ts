@@ -39,4 +39,10 @@ export class UserResponseDto {
 
   @Expose()
   updatedAt: Date;
+
+  @Expose()
+  followersCount: number;
+
+  @Expose()
+  followingCount: number;
 }

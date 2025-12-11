@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -21,6 +22,7 @@ import {
   ResetPasswordDto,
 } from './dto/update-user.dto';
 import { Throttle } from '@nestjs/throttler';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -39,24 +41,31 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    //! Capture client IP and User-Agent for audit/security
     const ip = req.ip;
     const userAgent = req.get('user-agent') ?? undefined;
+
     const response = await this.authService.signup(dto, ip, userAgent);
+
     if (response) {
-      //? Set HttpOnly refresh token cookie
+      //* Refresh token cookie
       res.cookie('refresh_token', response.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         maxAge: response.refreshExpiresAt.getTime() - Date.now(),
+        path: '/',
       });
 
-      //* Return access token + user info
-      return {
-        accessToken: response.accessToken,
-        user: response.user,
-      };
+      //* Access token cookie
+      res.cookie('access_token', response.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 15,
+        path: '/',
+      });
+
+      return;
     }
   }
 
@@ -86,19 +95,23 @@ export class AuthController {
     const ip = req.ip;
     const userAgent = req.get('user-agent') ?? undefined;
 
-    const { transformedUser, accessToken, refreshToken, refreshExpiresAt } =
+    const { accessToken, refreshToken, refreshExpiresAt } =
       await this.authService.login(dto, ip, userAgent);
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: refreshExpiresAt.getTime() - Date.now(),
+      path: '/',
     });
-
-    return {
-      accessToken,
-      user: transformedUser,
-    };
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 15,
+      path: '/',
+    });
+    return;
   }
 
   /**
@@ -156,9 +169,20 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: expiresAt.getTime() - Date.now(),
+      path: '/',
     });
-
-    return { accessToken };
+    //* Access token cookie
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 15,
+      path: '/',
+    });
+    return {
+      success: true,
+      message: 'Token rotated',
+    };
   }
 
   /**
@@ -174,7 +198,9 @@ export class AuthController {
       await this.tokenService.revokeRefreshToken(refreshToken);
       //! Clear cookie
       res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'strict' });
-      return;
+      res.clearCookie('access_token', { httpOnly: true, sameSite: 'lax' });
+
+      return { success: true };
     }
   }
   /**
@@ -183,14 +209,22 @@ export class AuthController {
    * @param res
    */
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard)
   @Post('logout-all')
   async logoutAll(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { userId } = req.body.userId as { userId: string };
-    await this.tokenService.revokeAllForUser(userId);
-    res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'strict' });
+    try {
+      const { userId } = req.user as { userId: string };
+      await this.tokenService.revokeAllForUser(userId);
+      res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'strict' });
+      res.clearCookie('access_token', { httpOnly: true, sameSite: 'lax' });
+      return { success: true };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
   /**
    * TODO ================= REQUEST PASSWORD RESET =================
@@ -199,7 +233,7 @@ export class AuthController {
   @Post('request-password-reset')
   async requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
     //! Always respond with generic message to prevent email enumeration
-    await this.authService.geeneratePasswordResetToken(dto.email);
+    await this.authService.generatePasswordResetToken(dto.email);
     return { message: 'If that email exists, a reset link has been sent.' };
   }
 

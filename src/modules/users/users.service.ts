@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
   Inject,
@@ -39,9 +40,13 @@ export class UsersService {
     if (cached) return cached;
     //* 1.Perform read operation on the database
     try {
-      const user = await this.userRepo.findOneBy({
-        id: userId,
-      });
+      const user = await this.userRepo
+        .createQueryBuilder('user')
+        .loadRelationCountAndMap('user.followersCount', 'user.followers')
+        .loadRelationCountAndMap('user.followingCount', 'user.following')
+        .where('user.id = :id', { id: userId })
+        .getOne();
+
       //* 2.Audit
       await this.auditService.createLog({
         action: AuditAction.PROFILE_VIEWED,

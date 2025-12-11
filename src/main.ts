@@ -5,7 +5,7 @@ import pinoHttp, { Options } from 'pino-http';
 import helmet from 'helmet';
 import { IncomingMessage } from 'http';
 import { AllExceptionsFilter } from './common/filters/custom-all-filter..filter';
-import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
+import { ConsoleLogger, ValidationPipe, VersioningType } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
@@ -15,6 +15,11 @@ async function bootstrap() {
     }),
   });
 
+  //* Application versioning
+  app.enableVersioning({
+    type: VersioningType.URI,
+    prefix: 'v1',
+  });
   /**
    * TODO==================  CONFIGURING HELMET =============
    */
@@ -24,7 +29,7 @@ async function bootstrap() {
    * TODO==================  CONFIGURING CORS =============
    */
   app.enableCors({
-    origin: `http://localhost:${process.env.PORT ?? 3000}`,
+    origin: `http://localhost:3001`,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

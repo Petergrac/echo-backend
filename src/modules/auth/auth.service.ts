@@ -16,8 +16,6 @@ import {
   AuditLogService,
 } from '../../common/services/audit.service';
 import { AuditAction, AuditResource } from '../../common/enums/audit.enums';
-import { plainToInstance } from 'class-transformer';
-import { UserResponseDto } from './dto/user-response.dto';
 import { LoginDto } from './dto/LoginDto.dto';
 import { EmailToken } from './entities/email-token.entity';
 
@@ -45,7 +43,6 @@ export class AuthService {
     userAgent?: string,
   ): Promise<
     | {
-        user: UserResponseDto;
         accessToken: string;
         refreshToken: string;
         refreshExpiresAt: Date;
@@ -112,12 +109,8 @@ export class AuthService {
     await this.audiService.createLog(log);
     await this.audiService.createLog(log2);
 
-    const transformedUser = plainToInstance(UserResponseDto, savedUser, {
-      excludeExtraneousValues: true,
-    });
     //* Return the response
     return {
-      user: transformedUser,
       refreshToken,
       accessToken,
       refreshExpiresAt: expiresAt,
@@ -132,13 +125,6 @@ export class AuthService {
    * @returns
    */
   async login(dto: LoginDto, ip?: string, userAgent?: string) {
-    //* 0.Check if user exists
-    // const user = await this.userRepo.findOne({
-    //   where: [
-    //     { email: dto.email },
-    //     { username: dto.username },
-    //   ] as FindOptionsWhere<User>[],
-    // });
     const user = await this.userRepo
       .createQueryBuilder('user')
       .where('user.email =:emailDto OR user.username =:name', {
@@ -177,13 +163,7 @@ export class AuthService {
       userAgent,
       userId: user.id,
     });
-    //* 4.Transform UserResponse
-    const transformedUser = plainToInstance(UserResponseDto, User, {
-      excludeExtraneousValues: true,
-    });
-
     return {
-      transformedUser,
       refreshToken,
       accessToken,
       refreshExpiresAt: expiresAt,
@@ -196,7 +176,7 @@ export class AuthService {
    * @param userAgent
    * @returns
    */
-  async geeneratePasswordResetToken(
+  async generatePasswordResetToken(
     email: string,
     ip?: string,
     userAgent?: string,

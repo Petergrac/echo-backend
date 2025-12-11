@@ -114,4 +114,11 @@ export class User extends CoreEntity {
 
   @OneToMany(() => Mention, (mention) => mention.mentionedUser)
   mentions: Mention[];
+
+  //todo ======> virtual fields
+  @Column({ type: 'int', default: 0 })
+  followersCount: number;
+
+  @Column({ type: 'int', default: 0 })
+  followingCount: number;
 }

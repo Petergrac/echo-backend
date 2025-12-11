@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post, PostVisibility } from '../entities/post.entity';
@@ -20,6 +21,8 @@ import { MentionService } from './mention.service';
 import { Follow } from '../../users/follow/entities/follow.entity';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { NotificationsService } from '../../notifications/services/notifications.service';
+import type { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class PostsService {
@@ -37,6 +40,7 @@ export class PostsService {
     private readonly hashTagService: HashtagService,
     private readonly mentionService: MentionService,
     private readonly notificationService: NotificationsService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   //TODO ==================== CREATE POST ====================
@@ -170,6 +174,25 @@ export class PostsService {
     ip?: string,
     userAgent?: string,
   ) {
+    const cachedKey = `post:${postId}:viewer:${viewerId}`;
+    //TODO 0.Try cache first
+    const cachedPost = await this.cacheManager.get(cachedKey);
+    if (cachedPost) {
+      this.auditService
+        .createLog({
+          action: AuditAction.POST_VIEWED,
+          resource: AuditResource.POST,
+          userId: viewerId,
+          ip,
+          userAgent,
+          metadata: { postId, source: 'cache' },
+        })
+        .catch(() => {});
+
+      this.incrementViewCount(postId).catch(() => {});
+      return cachedPost;
+    }
+
     //* 1. Find post with relations
     const post = await this.getPostWithRelations(postId);
     if (!post) throw new NotFoundException('Post not found');
@@ -191,9 +214,12 @@ export class PostsService {
       metadata: { postId },
     });
 
-    return plainToInstance(PostResponseDto, post, {
+    const transformedPost = plainToInstance(PostResponseDto, post, {
       excludeExtraneousValues: true,
     });
+    //* 5.Cache the post then return
+    await this.cacheManager.set(cachedKey, transformedPost, 60_000);
+    return transformedPost;
   }
 
   //TODO ==================== UPDATE POST ====================
@@ -342,6 +368,19 @@ export class PostsService {
     ip?: string,
     userAgent?: string,
   ) {
+    const cacheKey = `userposts:${username}:viewer:${viewerId}:page:${page}:limit:${limit}`;
+    //* 0.Try cache first
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) {
+      await this.auditService.createLog({
+        action: AuditAction.PROFILE_VIEWED,
+        resource: AuditResource.USER,
+        userId: viewerId,
+        ip,
+        userAgent,
+        metadata: { targetUsername: username, page, limit },
+      });
+    }
     //* 1. Find user
     const user = await this.userRepo.findOne({ where: { username } });
     if (!user) throw new NotFoundException('User not found');
@@ -370,17 +409,7 @@ export class PostsService {
 
     const [posts, total] = await query.getManyAndCount();
 
-    //* 4. Audit log
-    await this.auditService.createLog({
-      action: AuditAction.POST_VIEWED,
-      resource: AuditResource.POST,
-      userId: viewerId,
-      ip,
-      userAgent,
-      metadata: { targetUsername: username, page, limit },
-    });
-
-    return {
+    const result = {
       posts: plainToInstance(PostResponseDto, posts, {
         excludeExtraneousValues: true,
         exposeUnsetFields: false,
@@ -393,6 +422,18 @@ export class PostsService {
         hasPrevPage: page > 1,
       },
     };
+
+    //* 4. Cache for 2 minutes
+    await this.cacheManager.set(cacheKey, result, 120_000);
+    //* 5. Audit log
+    await this.auditService.createLog({
+      action: AuditAction.POST_VIEWED,
+      resource: AuditResource.POST,
+      userId: viewerId,
+      ip,
+      userAgent,
+      metadata: { targetUsername: username, page, limit },
+    });
   }
 
   //TODO ==================== GET USER FEED ====================

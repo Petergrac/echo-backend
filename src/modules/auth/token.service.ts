@@ -55,7 +55,7 @@ export class TokenService {
   ): Promise<{ token: string; expiresAt: Date }> {
     const strings = this.generatePlainToken();
     const hashed = await argon2.hash(strings[0]);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 1000); //? Refresh token for 7 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); //? Refresh token for 7 days
 
     await this.refreshTokenRepo.save({
       tokenId: strings[1],
@@ -183,23 +183,28 @@ export class TokenService {
    */
   async revokeAllForUser(userId: string) {
     //* 1. Revoke all the tokens
-    await this.refreshTokenRepo.update(
-      {
-        user: {
-          id: userId,
+    try {
+      await this.refreshTokenRepo.update(
+        {
+          user: {
+            id: userId,
+          },
+          revoked: false,
         },
-        revoked: false,
-      },
-      { revoked: true },
-    );
-    //* 2.Audit the action
-    await this.auditService.createLog({
-      action: AuditAction.LOGOUT,
-      resource: AuditResource.AUTH,
-      metadata: {
-        userId,
-      },
-    });
+        { revoked: true },
+      );
+      //* 2.Audit the action
+      await this.auditService.createLog({
+        action: AuditAction.LOGOUT,
+        resource: AuditResource.AUTH,
+        metadata: {
+          userId,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
   /**
    *TODO ======================= REVOKE A SPECIFIC TOKEN METHOD =================
