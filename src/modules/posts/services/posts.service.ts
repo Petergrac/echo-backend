@@ -23,6 +23,7 @@ import { NotificationType } from '../../notifications/entities/notification.enti
 import { NotificationsService } from '../../notifications/services/notifications.service';
 import type { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { PostStatusService } from './post-status.service';
 
 @Injectable()
 export class PostsService {
@@ -35,6 +36,7 @@ export class PostsService {
 
     //* Services
     private readonly auditService: AuditLogService,
+    private readonly postStatusService: PostStatusService,
     private readonly cloudinary: CloudinaryService,
     private readonly dataSource: DataSource,
     private readonly hashTagService: HashtagService,
@@ -96,7 +98,10 @@ export class PostsService {
         );
         await queryRunner.manager.save(Media, mediaEntities);
       }
-
+      const postStatus = await this.postStatusService.getPostStatus(
+        savedPost.id,
+        userId,
+      );
       //* 4. Commit transaction
       await queryRunner.commitTransaction();
       //* <<<<<<<<<<<< EXTRACT MENTION & HASHTAG >>>>>>>>>>>>>>>>>>>>>>>
@@ -146,10 +151,15 @@ export class PostsService {
         batchNotifications,
       );
       //* 6. Transform & Return post with relations
-      const postWithRelations = this.getPostWithRelations(savedPost.id);
-      return plainToInstance(PostResponseDto, postWithRelations, {
-        excludeExtraneousValues: true,
-      });
+      const postWithRelations = await this.getPostWithRelations(savedPost.id);
+      return {
+        post: {
+          ...plainToInstance(PostResponseDto, postWithRelations, {
+            excludeExtraneousValues: true,
+          }),
+          ...postStatus,
+        },
+      };
     } catch (error) {
       await queryRunner.rollbackTransaction();
 
@@ -213,10 +223,16 @@ export class PostsService {
       userAgent,
       metadata: { postId },
     });
-
-    const transformedPost = plainToInstance(PostResponseDto, post, {
-      excludeExtraneousValues: true,
-    });
+    const postStatus = await this.postStatusService.getPostStatus(
+      postId,
+      viewerId,
+    );
+    const transformedPost = {
+      ...plainToInstance(PostResponseDto, post, {
+        excludeExtraneousValues: true,
+      }),
+      ...postStatus,
+    };
     //* 5.Cache the post then return
     await this.cacheManager.set(cachedKey, transformedPost, 60_000);
     return transformedPost;
@@ -294,10 +310,19 @@ export class PostsService {
         userAgent,
         metadata: { postId, changes: Object.keys(udto) },
       });
-      const finalPost = this.getPostWithRelations(postId);
-      return plainToInstance(PostResponseDto, finalPost, {
-        excludeExtraneousValues: true,
-      });
+      const finalPost = await this.getPostWithRelations(postId);
+      const postStatus = await this.postStatusService.getPostStatus(
+        postId,
+        userId,
+      );
+      return {
+        post: {
+          ...plainToInstance(PostResponseDto, finalPost, {
+            excludeExtraneousValues: true,
+          }),
+          ...postStatus,
+        },
+      };
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -380,6 +405,7 @@ export class PostsService {
         userAgent,
         metadata: { targetUsername: username, page, limit },
       });
+      return cached;
     }
     //* 1. Find user
     const user = await this.userRepo.findOne({ where: { username } });
@@ -409,10 +435,26 @@ export class PostsService {
 
     const [posts, total] = await query.getManyAndCount();
 
+    //* 4. Get post status for all posts
+    const postIds = posts.map((post) => post.id);
+    postIds.map(async (id) => await this.incrementViewCount(id));
+    const statusMap = await this.postStatusService.getPostsStatus(
+      postIds,
+      viewerId,
+    );
+    //* 5.Map posts with their status
+    const postsWithStatus = posts.map((post) => ({
+      ...post,
+      ...(statusMap[post.id] || {
+        hasLiked: false,
+        hasBookmarked: false,
+        hasReposted: false,
+        hasReplied: false,
+      }),
+    }));
     const result = {
-      posts: plainToInstance(PostResponseDto, posts, {
+      posts: plainToInstance(PostResponseDto, postsWithStatus, {
         excludeExtraneousValues: true,
-        exposeUnsetFields: false,
       }),
       pagination: {
         currentPage: page,
@@ -422,10 +464,9 @@ export class PostsService {
         hasPrevPage: page > 1,
       },
     };
-
-    //* 4. Cache for 2 minutes
+    //* 6. Cache for 2 minutes
     await this.cacheManager.set(cacheKey, result, 120_000);
-    //* 5. Audit log
+    //* 7. Audit log
     await this.auditService.createLog({
       action: AuditAction.POST_VIEWED,
       resource: AuditResource.POST,
@@ -434,6 +475,7 @@ export class PostsService {
       userAgent,
       metadata: { targetUsername: username, page, limit },
     });
+    return result;
   }
 
   //TODO ==================== GET USER FEED ====================
@@ -449,7 +491,7 @@ export class PostsService {
         { userId },
       )
       .leftJoinAndSelect('post.media', 'media')
-      .leftJoin('post.author', 'postAuthor')
+      .leftJoinAndSelect('post.author', 'postAuthor')
       .where('post.deletedAt IS NULL')
       .andWhere('(post.authorId = :userId OR followers.followerId = :userId)', {
         userId,
@@ -463,8 +505,26 @@ export class PostsService {
       .take(limit)
       .getManyAndCount();
 
+    //* 4. Get post status for all posts
+    const postIds = posts.map((post) => post.id);
+    postIds.map(async (id) => await this.incrementViewCount(id));
+    const statusMap = await this.postStatusService.getPostsStatus(
+      postIds,
+      userId,
+    );
+    //* 5.Map posts with their status
+    const postsWithStatus = posts.map((post) => ({
+      ...post,
+      ...(statusMap[post.id] || {
+        hasLiked: false,
+        hasBookmarked: false,
+        hasReposted: false,
+        hasReplied: false,
+      }),
+    }));
+
     return {
-      posts: plainToInstance(PostResponseDto, posts, {
+      posts: plainToInstance(PostResponseDto, postsWithStatus, {
         excludeExtraneousValues: true,
         exposeUnsetFields: false,
       }),
@@ -507,18 +567,12 @@ export class PostsService {
     if (!viewerId) return false;
     if (post.author.id === viewerId) return true;
     if (post.visibility === PostVisibility.FOLLOWERS) {
-      const isFollowing = await this.userRepo
-        .createQueryBuilder('user')
-        .innerJoin(
-          'user.following',
-          'following',
-          'following.followingId = :authorId',
-          {
-            authorId: post.author.id,
-          },
-        )
-        .where('user.id = :viewerId', { viewerId })
+      const isFollowing = await this.followRepo
+        .createQueryBuilder('f')
+        .where('f.followerId = :viewerId', { viewerId })
+        .andWhere('f.followingId = :authorId', { authorId: post.author.id })
         .getCount();
+      console.log(isFollowing);
       return isFollowing > 0;
     }
     return false;

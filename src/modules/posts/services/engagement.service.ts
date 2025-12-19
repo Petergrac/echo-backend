@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, IsNull } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { AuditLogService } from '../../../common/services/audit.service';
 import { CloudinaryService } from '../../../common/cloudinary/cloudinary.service';
 import { Bookmark } from '../entities/bookmark.entity';
@@ -25,6 +25,7 @@ import { MentionService } from './mention.service';
 import { NotificationsService } from '../../notifications/services/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { HashtagService } from './hashtag.service';
+import { PostStatusService } from './post-status.service';
 
 @Injectable()
 export class EngagementService {
@@ -45,6 +46,7 @@ export class EngagementService {
     private readonly mentionService: MentionService,
     private readonly notificationService: NotificationsService,
     private readonly hashTagService: HashtagService,
+    private readonly postStatusService: PostStatusService,
   ) {}
 
   //TODO ==================== TOGGLE LIKE ====================
@@ -185,6 +187,7 @@ export class EngagementService {
     page: number = 1,
     limit: number = 20,
   ) {
+    //* 1.Get all liked posts by this user
     const [likes, total] = await this.likeRepo.findAndCount({
       where: { user: { id: userId } },
       relations: ['post', 'post.author', 'post.media'],
@@ -192,12 +195,26 @@ export class EngagementService {
       skip: (page - 1) * limit,
       take: limit,
     });
+    //* 2.Get post status for all liked posts
+    const postIds = likes.map((like) => like.post.id);
+    const statusMap = await this.postStatusService.getPostsStatus(
+      postIds,
+      userId,
+    );
+
     const posts = likes.map((like) => ({
       ...plainToInstance(PostResponseDto, like.post, {
         excludeExtraneousValues: true,
       }),
+      ...(statusMap[like.post.id] || {
+        hasLiked: true,
+        hasBookmarked: false,
+        hasReposted: false,
+        hasReplied: false,
+      }),
       likedAt: like.createdAt, //? Include when user liked it
     }));
+
     return {
       posts,
       pagination: {
@@ -278,6 +295,7 @@ export class EngagementService {
 
   //TODO ==================== GET USER BOOKMARKS ====================
   async getUserBookmarks(userId: string, page: number = 1, limit: number = 20) {
+    //* 1.Get bookmarks and total count
     const [bookmarks, total] = await this.bookmarkRepo.findAndCount({
       where: { user: { id: userId } },
       relations: ['post', 'post.author', 'post.media'],
@@ -286,10 +304,23 @@ export class EngagementService {
       take: limit,
     });
 
+    //* 2.Get post status for all bookmarked posts
+    const postIds = bookmarks.map((bookmark) => bookmark.post.id);
+    const statusMap = await this.postStatusService.getPostsStatus(
+      postIds,
+      userId,
+    );
+
     const posts = bookmarks.map((bookmark) => ({
       ...plainToInstance(PostResponseDto, bookmark.post, {
         excludeExtraneousValues: true,
         exposeUnsetFields: false,
+      }),
+      ...(statusMap[bookmark.post.id] || {
+        hasLiked: false,
+        hasBookmarked: true,
+        hasReposted: false,
+        hasReplied: false,
       }),
       bookmarkedAt: bookmark.createdAt, //? Include when user bookmarked it
     }));
@@ -666,25 +697,33 @@ export class EngagementService {
 
   //TODO ==================== GET POST REPLIES ====================
   async getPostReplies(postId: string, page: number = 1, limit: number = 20) {
-    //* 1. Check if post exists
     const post = await this.postRepo.findOneBy({ id: postId });
     if (!post) throw new NotFoundException('Post not found');
 
-    //* 2. Get top-level replies (where parentReplyId is null)
-    const [replies, total] = await this.replyRepo.findAndCount({
-      where: {
-        post: { id: postId },
-        parentReply: IsNull(), // Only top-level replies
-      },
-      relations: ['author', 'media'],
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const queryBuilder = this.replyRepo
+      .createQueryBuilder('reply')
+      .leftJoinAndSelect('reply.author', 'author')
+      .leftJoinAndSelect('reply.media', 'media')
+      //* Sub-query to count direct children
+      .loadRelationCountAndMap(
+        'reply.directDescendantsCount',
+        'reply.replies',
+        'children',
+        (qb) => qb.where('children.parentReplyId IS NOT NULL'),
+      )
+      .where('reply.postId = :postId', { postId })
+      .andWhere('reply.parentReplyId IS NULL') // Only top-level
+      .orderBy('reply.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [replies, total] = await queryBuilder.getManyAndCount();
+
     const newReplies = plainToInstance(ReplyResponseDto, replies, {
       excludeExtraneousValues: true,
       exposeUnsetFields: false,
     });
+
     return {
       replies: newReplies,
       pagination: {
@@ -703,14 +742,18 @@ export class EngagementService {
     const parentReply = await this.replyRepo.findOneBy({ id: replyId });
     if (!parentReply) throw new NotFoundException('Parent reply not found');
 
-    //* 2. Get nested replies
-    const [replies, total] = await this.replyRepo.findAndCount({
-      where: { parentReply: { id: replyId } },
-      relations: ['author', 'media'],
-      order: { createdAt: 'ASC' }, // ?Chronological for nested replies
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    //* 2. Get nested replies with their own child counts
+    const queryBuilder = this.replyRepo
+      .createQueryBuilder('reply')
+      .leftJoinAndSelect('reply.author', 'author')
+      .leftJoinAndSelect('reply.media', 'media')
+      .loadRelationCountAndMap('reply.directDescendantsCount', 'reply.replies')
+      .where('reply.parentReplyId = :replyId', { replyId })
+      .orderBy('reply.createdAt', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [replies, total] = await queryBuilder.getManyAndCount();
 
     return {
       replies: plainToInstance(ReplyResponseDto, replies, {
@@ -726,7 +769,6 @@ export class EngagementService {
       },
     };
   }
-
   //TODO ==================== DELETE REPLY ====================
   async deleteReply(
     replyId: string,
@@ -837,8 +879,36 @@ export class EngagementService {
           1,
         );
         action = 'UNREPOSTED';
-      } else if (existingRepost && existingRepost.deletedAt) {
-        //* 4. Restore repost
+      } else if (
+        existingRepost &&
+        existingRepost.deletedAt &&
+        createRepostDto?.content
+      ) {
+        //* 4. Restore & update  repost
+        await queryRunner.manager.restore(Repost, existingRepost.id);
+        await queryRunner.manager.update(Repost, existingRepost.id, {
+          content: createRepostDto.content,
+        });
+        await queryRunner.manager.increment(
+          Post,
+          { id: postId },
+          'repostCount',
+          1,
+        );
+        action = 'REPOSTED';
+        //* 4.1 Send notification
+        await this.notificationService.createNotification({
+          type: NotificationType.REPOST,
+          recipientId: originalPost.authorId,
+          actorId: userId,
+          postId: postId,
+        });
+      } else if (
+        existingRepost &&
+        existingRepost.deletedAt &&
+        !createRepostDto?.content
+      ) {
+        //* 4. Restore & update  repost
         await queryRunner.manager.restore(Repost, existingRepost.id);
         await queryRunner.manager.increment(
           Post,
@@ -947,10 +1017,23 @@ export class EngagementService {
       take: limit,
     });
 
+    // Get post status for all reposted posts
+    const postIds = reposts.map((repost) => repost.originalPost.id);
+    const statusMap = await this.postStatusService.getPostsStatus(
+      postIds,
+      userId,
+    );
+
     const posts = reposts.map((repost) => ({
       ...plainToInstance(PostResponseDto, repost.originalPost, {
         excludeExtraneousValues: true,
         exposeUnsetFields: false,
+      }),
+      ...(statusMap[repost.originalPost.id] || {
+        hasLiked: false,
+        hasBookmarked: false,
+        hasReposted: true, // This is always true since we're in reposted posts
+        hasReplied: false,
       }),
       repostContent: repost.content, //? Include repost commentary
       repostedAt: repost.createdAt, //? Include when user reposted it
@@ -967,7 +1050,6 @@ export class EngagementService {
       },
     };
   }
-
   //? ==================== UTILITY METHODS ====================
 
   //* Get reply with all relations

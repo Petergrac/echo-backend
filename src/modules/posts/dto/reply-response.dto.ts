@@ -21,6 +21,9 @@ export class ReplyResponseDto {
   postId: string;
 
   @Expose()
+  directDescendantsCount: number;
+
+  @Expose()
   parentReplyId: string | null;
 
   @Type(() => UserResponseDto)

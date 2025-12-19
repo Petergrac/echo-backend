@@ -7,6 +7,7 @@ import { Post } from '../entities/post.entity';
 import { plainToInstance } from 'class-transformer';
 import { TagResponseDto } from '../dto/hashtag-response.dto';
 import { PostResponseDto } from '../dto/post-response.dto';
+import { PostStatusService } from './post-status.service';
 
 @Injectable()
 export class HashtagService {
@@ -18,6 +19,8 @@ export class HashtagService {
     @InjectRepository(PostHashtag)
     private readonly postHashtagRepo: Repository<PostHashtag>,
     @InjectRepository(Post) private readonly postRepo: Repository<Post>,
+
+    private readonly postStatusService: PostStatusService,
   ) {}
 
   //TODO ==================== EXTRACT HASHTAGS FROM CONTENT ====================
@@ -145,7 +148,12 @@ export class HashtagService {
   }
 
   //TODO ==================== GET POSTS BY HASHTAG ====================
-  async getHashtagPosts(hashtag: string, page: number = 1, limit: number = 20) {
+  async getHashtagPosts(
+    hashtag: string,
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
     try {
       //* 1. Find the hashtag
       const tag = await this.hashtagRepo.findOne({
@@ -174,8 +182,30 @@ export class HashtagService {
         .take(limit)
         .getManyAndCount();
 
+      //* 3. Get post status for all posts
+      const postIds = posts.map((post) => post.id);
+      const statusMap = await this.postStatusService.getPostsStatus(
+        postIds,
+        userId,
+      );
+
+      //* 4. Merge posts with their status
+      const postsWithStatus = posts.map((post) => {
+        const status = statusMap[post.id] || {
+          hasLiked: false,
+          hasBookmarked: false,
+          hasReposted: false,
+          hasReplied: false,
+        };
+
+        return {
+          ...post,
+          ...status,
+        };
+      });
+
       return {
-        posts: plainToInstance(PostResponseDto, posts, {
+        posts: plainToInstance(PostResponseDto, postsWithStatus, {
           excludeExtraneousValues: true,
         }),
         pagination: {

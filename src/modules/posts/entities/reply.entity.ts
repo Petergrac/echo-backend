@@ -25,6 +25,11 @@ export class Reply extends CoreEntity {
   parentReplyId: string;
 
   /**
+   * TODO ============ VIRTUAL FIELDS(MAPPING) ===
+   */
+
+  directDescendantsCount?: number;
+  /**
    * TODO ================ RELATIONS =======
    */
   @OneToMany(() => Media, (media) => media.reply)

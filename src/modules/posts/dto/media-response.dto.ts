@@ -8,7 +8,7 @@ export class MediaResponseDto {
   mediaUrl: string;
 
   @Expose()
-  resourceType: 'image' | 'video' | 'gif';
+  resourceType: 'image' | 'gif';
 
   @Exclude()
   publicId: string;

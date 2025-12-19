@@ -100,7 +100,7 @@ export class EngagementController {
    */
   //TODO ================ CREATE A REPLY ================
   @Post('posts/:id/reply')
-  @UseInterceptors(FilesInterceptor('media', 2))
+  @UseInterceptors(FilesInterceptor('media', 1))
   async createReply(
     @Req()
     req: Request,
@@ -122,7 +122,7 @@ export class EngagementController {
   }
   //TODO ===================== PATCH A REPLY ===================
   @Patch('posts/:id/:replyId')
-  @UseInterceptors(FilesInterceptor('media', 2))
+  @UseInterceptors(FilesInterceptor('media', 1))
   async patchReply(
     @Req()
     req: Request,

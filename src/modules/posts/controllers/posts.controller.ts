@@ -133,7 +133,7 @@ export class PostsController {
     return await this.postsService.getFeed(userId, page, limit);
   }
   //TODO ==================== ALGORITHMIC FEED (MUTUAL FOLLOWING) ====================
-  @Get('feed/algorithmic')
+  @Get('feed/for-you')
   async getAlgorithmicFeed(
     @Req() req: Request,
     @Query('page') page: number = 1,
@@ -146,11 +146,18 @@ export class PostsController {
   //TODO ==================== TRENDING FEED (Daily or weekly) ====================
   @Get('feed/trending')
   async getTrendingFeed(
+    @Req() req: Request,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
-    @Query('timeframe') timeframe: 'day' | 'week' = 'day',
+    @Query('timeframe') timeframe: 'day' | 'week' = 'week',
   ) {
-    return await this.feedService.getTrendingFeed(page, limit, timeframe);
+    const userId = (req.user as { userId: string }).userId;
+    return await this.feedService.getTrendingFeed(
+      page,
+      userId,
+      limit,
+      timeframe,
+    );
   }
   //TODO ==================== DISCOVER FEED (Hot Posts That I am Not Following) ====================
   @Get('feed/discover')
@@ -161,5 +168,15 @@ export class PostsController {
   ) {
     const userId = (req.user as { userId: string }).userId;
     return await this.feedService.getDiscoverFeed(userId, page, limit);
+  }
+  //TODO ==================== DISCOVER FEED (Hot Posts That I am Not Following) ====================
+  @Get('feed/following')
+  async getFollowingFeed(
+    @Req() req: Request,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    const userId = (req.user as { userId: string }).userId;
+    return await this.feedService.getFollowingFeed(userId, page, limit);
   }
 }

@@ -1,4 +1,3 @@
-// dto/post-response.dto.ts
 import { Exclude, Expose, Type } from 'class-transformer';
 import { MediaResponseDto } from './media-response.dto';
 import { UserResponseDto } from '../../auth/dto/user-response.dto';
@@ -39,6 +38,22 @@ export class PostResponseDto {
   @Type(() => MediaResponseDto)
   @Expose()
   media: MediaResponseDto[];
+
+  //* User interaction status
+  @Expose()
+  hasLiked: boolean;
+
+  @Expose()
+  hasBookmarked: boolean;
+
+  @Expose()
+  hasReposted: boolean;
+
+  @Expose()
+  hasReplied: boolean;
+
+  @Expose()
+  repostContent: string | null;
 
   @Exclude()
   updatedAt?: Date;
