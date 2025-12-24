@@ -26,7 +26,6 @@ export class FileValidationPipe implements PipeTransform {
 
   transform(files: Express.Multer.File[]) {
     const opts = { ...this.defaultOptions };
-
     if (!files || files.length === 0) {
       return files;
     }

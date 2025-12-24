@@ -146,7 +146,12 @@ export class UsersService {
       //* 1.Get specific user by id
       const user = await this.userRepo.findOne({
         where: { id: userId },
-        select: { id: true, emailVerified: true, avatarPublicId: true },
+        select: {
+          id: true,
+          emailVerified: true,
+          avatarPublicId: true,
+          username: true,
+        },
       });
       if (!user) throw new NotFoundException('User not found');
       let avatarUrl: string | null = '';
@@ -154,14 +159,16 @@ export class UsersService {
       let resourceType: string | null = '';
 
       //* 2. Upload the avatar to cloudinary
+      console.log('outside log');
       if (file) {
+        console.log('inside log');
         const uploadResult = (await this.cloudinary.uploadImage(file)) as {
           url: string;
           secure_url: string;
           public_id: string;
           resource_type: string;
         };
-        avatarUrl = uploadResult?.url ?? uploadResult?.secure_url;
+        avatarUrl = uploadResult?.secure_url;
         publicId = uploadResult.public_id;
         resourceType = uploadResult.resource_type;
         //! Delete the old avatar image if available
@@ -184,20 +191,23 @@ export class UsersService {
         emailVerified = false;
       }
       //* 4.Patch the user profile
-      await this.userRepo.save({
+      const updateData: any = {
         id: userId,
-        avatar: avatarUrl,
-        avatarPublicId: publicId,
         ...dto,
         emailVerified,
-        resourceType,
-      });
+      };
+      if (file && avatarUrl) {
+        updateData.avatar = avatarUrl;
+        updateData.avatarPublicId = publicId;
+        updateData.resourceType = resourceType;
+      }
+      await this.userRepo.save(updateData);
       //* 5. Fetch the user
       const updatedUser = await this.userRepo.findOneBy({ id: userId });
 
       //todo=> 6.Invalidate the cache
       if (updatedUser) {
-        await this.cacheManager.del(`user_profile:${updatedUser.username}`);
+        await this.cacheManager.del(`user_profile:${user.username}`);
         await this.cacheManager.del(`user_id:${updatedUser.id}`);
       }
 
