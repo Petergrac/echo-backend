@@ -1,10 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateReplyDto {
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(280, { message: 'reply size exceeded 280 characters' })
-  content: string;
+  content?: string;
 
   @IsString()
   @IsOptional()
@@ -13,9 +13,9 @@ export class CreateReplyDto {
 
 export class UpdateReplyDto {
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(280, { message: 'reply size exceeded 280 characters' })
-  content: string;
+  content?: string;
 
   @IsString()
   @IsOptional()

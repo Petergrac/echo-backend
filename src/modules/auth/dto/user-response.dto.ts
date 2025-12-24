@@ -45,4 +45,10 @@ export class UserResponseDto {
 
   @Expose()
   followingCount: number;
+
+  @Expose()
+  postCount: number;
+
+  @Expose()
+  isFollowing: boolean;
 }

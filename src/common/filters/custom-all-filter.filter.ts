@@ -31,7 +31,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
           path: request.url,
         });
       }
-
       //* 3.For other HttpExceptions
       return response.status(status).json({
         timestamp: new Date().toISOString(),

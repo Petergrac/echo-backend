@@ -72,44 +72,4 @@ export class FollowController {
       limit,
     );
   }
-
-  /**
-   * TODO> ========== GET MY FOLLOWERS ============
-   */
-  @Throttle({ default: { limit: 100, ttl: 60000 } }) //? 100 request per minute
-  @Get('current/me/followers')
-  async getMyFollowers(
-    @Req() req: Request,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    const currentUserId = (req.user as { userId: string }).userId;
-    return this.followService.getUserFollowers(
-      null,
-      currentUserId,
-      req.ip,
-      req.get('user-agent'),
-      page,
-      limit,
-    );
-  }
-
-  /**
-   * TODO> ========== GET WHO I FOLLOW ============
-   */
-  @Throttle({ default: { limit: 100, ttl: 60000 } }) //? 100 request per minute
-  @Get('current/me/following')
-  async getMyFollowing(
-    @Req() req: Request,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    const currentUserId = (req.user as { userId: string }).userId;
-    return this.followService.getUserFollowing(
-      null,
-      currentUserId,
-      page,
-      limit,
-    );
-  }
 }

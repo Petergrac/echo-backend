@@ -16,6 +16,7 @@ import { User } from '../auth/entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
+import { Follow } from './follow/entities/follow.entity';
 
 @Injectable()
 export class UsersService {
@@ -74,30 +75,51 @@ export class UsersService {
    * @param userAgent
    * @returns
    */
-  async getUserProfile(username: string, ip?: string, userAgent?: string) {
+  async getUserProfile(
+    username: string,
+    currentUserId: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
     //* 0. Check the cache first and if is a hit, return it
     const cacheKey = `user_profile:${username}`;
     const cache = await this.cacheManager.get(cacheKey);
     if (cache) return cache;
     try {
       //* 1.Fetch user by name
-      const user = await this.userRepo.findOneBy({
-        username,
-      });
+      const user = await this.userRepo
+        .createQueryBuilder('user')
+        .where('user.username = :username', { username })
+        .loadRelationCountAndMap('user.followersCount', 'user.followers')
+        .loadRelationCountAndMap('user.followingCount', 'user.following')
+        .loadRelationCountAndMap('user.postCount', 'user.posts')
+        .getOne();
+
       if (!user) throw new NotFoundException(`${username} is not found`);
 
-      //* 2.Audit the view
+      //* 2. Check if current user is following this user
+      const followRecord = await this.userRepo
+        .createQueryBuilder()
+        .from(Follow, 'f')
+        .where('f.followerId = :currentUserId', { currentUserId })
+        .andWhere('f.followingId = :userId', { userId: user.id })
+        .andWhere('f.deletedAt IS NULL')
+        .select('1')
+        .getRawOne();
+      user.isFollowing = !!followRecord;
+
+      //* 3.Audit the view
       await this.auditService.createLog({
         action: AuditAction.PROFILE_VIEWED,
         resource: AuditResource.USER,
         ip,
         userAgent,
       });
-      //* 3.Transform and return the user
+      //* 4.Transform and return the user
       const transformedUser = plainToInstance(UserResponseDto, user, {
         excludeExtraneousValues: true,
       });
-      //* 4.Cache the transformed user
+      //* 5.Cache the transformed user
       await this.cacheManager.set(cacheKey, transformedUser, 300_000); //? 5 minutes
       return transformedUser;
     } catch (error) {

@@ -154,7 +154,6 @@ export class AuthController {
 
     const ip = req.ip;
     const userAgent = req.get('user-agent') ?? undefined;
-
     const {
       token: newRefreshToken,
       expiresAt,

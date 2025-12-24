@@ -21,6 +21,7 @@ import { FileValidationPipe } from '../pipes/file-validation.pipe';
 import type { Request } from 'express';
 import { UpdatePostDto } from '../dto/update-post.dto';
 import { FeedService } from '../services/feed.service';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('posts')
 @UseGuards(JwtAuthGuard)
@@ -123,6 +124,7 @@ export class PostsController {
    * @returns
    */
   //TODO ============== GET HOME FEED ===================
+  @Throttle({ default: { ttl: 6000, limit: 30 } })
   @Get('feed/me')
   async getMyHomeFeed(
     @Req() req: Request,
@@ -134,6 +136,7 @@ export class PostsController {
   }
   //TODO ==================== ALGORITHMIC FEED (MUTUAL FOLLOWING) ====================
   @Get('feed/for-you')
+  @Throttle({ default: { ttl: 6000, limit: 30 } })
   async getAlgorithmicFeed(
     @Req() req: Request,
     @Query('page') page: number = 1,
@@ -145,6 +148,7 @@ export class PostsController {
 
   //TODO ==================== TRENDING FEED (Daily or weekly) ====================
   @Get('feed/trending')
+  @Throttle({ default: { ttl: 6000, limit: 30 } })
   async getTrendingFeed(
     @Req() req: Request,
     @Query('page') page: number = 1,
@@ -161,6 +165,7 @@ export class PostsController {
   }
   //TODO ==================== DISCOVER FEED (Hot Posts That I am Not Following) ====================
   @Get('feed/discover')
+  @Throttle({ default: { ttl: 6000, limit: 30 } })
   async getDiscoverFeed(
     @Req() req: Request,
     @Query('page') page: number = 1,
@@ -171,6 +176,7 @@ export class PostsController {
   }
   //TODO ==================== DISCOVER FEED (Hot Posts That I am Not Following) ====================
   @Get('feed/following')
+  @Throttle({ default: { ttl: 6000, limit: 30 } })
   async getFollowingFeed(
     @Req() req: Request,
     @Query('page') page: number = 1,

@@ -132,6 +132,7 @@ export class TokenService {
     }
     //! Someone is trying to reuse a revoked token
     if (candidate.revoked) {
+      console.log('Token revoked');
       //* Revoke all and report of suspicious activity
       await this.refreshTokenRepo.update(
         { user: { id: candidate.user.id }, revoked: false },
@@ -168,7 +169,6 @@ export class TokenService {
       ip,
       userAgent,
     );
-
     const role = (candidate.user as { role: string }).role;
     return {
       token: newCompound.token,

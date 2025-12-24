@@ -48,8 +48,14 @@ export class UsersController {
     @Req() req: Request,
   ) {
     const ip = req.ip;
+    const userId = (req.user as { userId: string }).userId;
     const userAgent = req.get('user-agent');
-    return await this.usersService.getUserProfile(username, ip, userAgent);
+    return await this.usersService.getUserProfile(
+      username,
+      userId,
+      ip,
+      userAgent,
+    );
   }
   /**
    * TODO ================ UPDATE USER PROFILE ===========

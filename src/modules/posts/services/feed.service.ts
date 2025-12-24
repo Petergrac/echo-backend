@@ -101,7 +101,7 @@ export class FeedService {
           currentPage: page,
           hasNextPage: scoredPosts.length > page * limit,
           hasPrevPage: page > 1,
-          totalSourced: allPosts.length,
+          totalItems: allPosts.length,
         },
       };
     } catch (error) {
@@ -136,12 +136,12 @@ export class FeedService {
         .limit(limit)
         .getMany();
 
-      // Calculate scores in JavaScript
+      //* Calculate scores in JavaScript
       const postsWithScore = posts.map((post) => {
         const postAge = Date.now() - post.createdAt.getTime();
         const hours = postAge / (1000 * 60 * 60);
 
-        // Simple trending score
+        //* Simple trending score
         const engagement =
           post.likeCount + post.replyCount * 2 + post.repostCount * 1.5;
         const score = engagement / (hours + 2);
@@ -149,12 +149,12 @@ export class FeedService {
         return { post, score };
       });
 
-      // Sort by score
+      //* Sort by score
       const sortedPosts = postsWithScore
         .sort((a, b) => b.score - a.score)
         .map((item) => item.post);
 
-      // Get post status
+      //* Get post status
       const postIds = sortedPosts.map((post) => post.id);
       await Promise.allSettled(
         postIds.map((id) => this.incrementViewCount(id)),
@@ -164,7 +164,7 @@ export class FeedService {
         userId,
       );
 
-      // Merge posts with their status
+      //* Merge posts with their status
       const postsWithStatus = sortedPosts.map((post) => {
         const status = statusMap[post.id] || {
           hasLiked: false,
@@ -186,8 +186,8 @@ export class FeedService {
         posts: postsWithStatus,
         pagination: {
           currentPage: page,
-          totalPages: 0, // Not calculating total for simplicity
           totalItems: sortedPosts.length,
+          totalPages: sortedPosts.length / limit,
           hasNextPage: false,
           hasPrevPage: page > 1,
         },
@@ -201,7 +201,6 @@ export class FeedService {
   //todo ==================== DISCOVER FEED ====================
   async getDiscoverFeed(userId: string, page: number = 1, limit: number = 20) {
     try {
-      // Simple query without complex expressions
       const posts = await this.postRepo
         .createQueryBuilder('post')
         .leftJoinAndSelect('post.author', 'author')
@@ -221,7 +220,6 @@ export class FeedService {
         .limit(limit)
         .getMany();
 
-      // Get post status
       const postIds = posts.map((post) => post.id);
       await Promise.allSettled(
         postIds.map((id) => this.incrementViewCount(id)),
@@ -231,7 +229,6 @@ export class FeedService {
         userId,
       );
 
-      // Merge posts with their status
       const postsWithStatus = posts.map((post) => {
         const status = statusMap[post.id] || {
           hasLiked: false,
@@ -253,6 +250,8 @@ export class FeedService {
         posts: postsWithStatus,
         pagination: {
           currentPage: page,
+          totalItems: posts.length,
+          totalPages: posts.length / limit,
           hasNextPage: posts.length === limit,
           hasPrevPage: page > 1,
         },
@@ -266,7 +265,6 @@ export class FeedService {
   //todo ==================== FOLLOWING FEED ====================
   async getFollowingFeed(userId: string, page: number = 1, limit: number = 20) {
     try {
-      // Simple query without complex expressions
       const followingIds = await this.getFollowingIds(userId);
 
       if (followingIds.length === 0) {
@@ -316,6 +314,7 @@ export class FeedService {
           posts: postsWithStatus,
           pagination: {
             currentPage: page,
+            totalItems: ownPosts.length,
             hasNextPage: ownPosts.length === limit,
             hasPrevPage: page > 1,
             noFollowing: true,
@@ -370,6 +369,8 @@ export class FeedService {
         posts: postsWithStatus,
         pagination: {
           currentPage: page,
+          totalItems: posts.length,
+          totalPages: posts.length / limit,
           hasNextPage: posts.length === limit,
           hasPrevPage: page > 1,
         },

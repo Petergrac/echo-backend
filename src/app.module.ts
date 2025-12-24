@@ -49,7 +49,7 @@ import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
         fixedWindow({
           mode: 'LIVE',
           window: '60s', //* 10 second fixed window
-          max: 10, //* Allow a maximum of 7 requests
+          max: 30, //* Allow a maximum of 7 requests
         }),
       ],
     }),

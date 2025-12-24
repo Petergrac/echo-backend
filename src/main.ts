@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 import pinoHttp, { Options } from 'pino-http';
 import helmet from 'helmet';
 import { IncomingMessage } from 'http';
-import { AllExceptionsFilter } from './common/filters/custom-all-filter..filter';
+import { AllExceptionsFilter } from './common/filters/custom-all-filter.filter';
 import { ConsoleLogger, ValidationPipe, VersioningType } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 

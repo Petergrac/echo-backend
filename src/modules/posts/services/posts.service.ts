@@ -393,20 +393,6 @@ export class PostsService {
     ip?: string,
     userAgent?: string,
   ) {
-    const cacheKey = `userposts:${username}:viewer:${viewerId}:page:${page}:limit:${limit}`;
-    //* 0.Try cache first
-    const cached = await this.cacheManager.get(cacheKey);
-    if (cached) {
-      await this.auditService.createLog({
-        action: AuditAction.PROFILE_VIEWED,
-        resource: AuditResource.USER,
-        userId: viewerId,
-        ip,
-        userAgent,
-        metadata: { targetUsername: username, page, limit },
-      });
-      return cached;
-    }
     //* 1. Find user
     const user = await this.userRepo.findOne({ where: { username } });
     if (!user) throw new NotFoundException('User not found');
@@ -464,8 +450,6 @@ export class PostsService {
         hasPrevPage: page > 1,
       },
     };
-    //* 6. Cache for 2 minutes
-    await this.cacheManager.set(cacheKey, result, 120_000);
     //* 7. Audit log
     await this.auditService.createLog({
       action: AuditAction.POST_VIEWED,

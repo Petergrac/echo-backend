@@ -116,9 +116,8 @@ export class User extends CoreEntity {
   mentions: Mention[];
 
   //todo ======> virtual fields
-  @Column({ type: 'int', default: 0 })
   followersCount: number;
-
-  @Column({ type: 'int', default: 0 })
   followingCount: number;
+  postCount: number;
+  isFollowing: boolean;
 }

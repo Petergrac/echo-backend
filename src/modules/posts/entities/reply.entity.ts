@@ -9,7 +9,7 @@ import { Mention } from './mention.entity';
 @Index(['post', 'createdAt']) //? For post replies sorting
 @Index(['author', 'createdAt']) //? For user's reply history
 export class Reply extends CoreEntity {
-  @Column('text')
+  @Column('text', { nullable: true })
   content: string;
 
   @Column()

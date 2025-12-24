@@ -3,9 +3,11 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { AuditLogService } from '../../../common/services/audit.service';
 import { CloudinaryService } from '../../../common/cloudinary/cloudinary.service';
 import { Bookmark } from '../entities/bookmark.entity';
@@ -26,6 +28,8 @@ import { NotificationsService } from '../../notifications/services/notifications
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { HashtagService } from './hashtag.service';
 import { PostStatusService } from './post-status.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class EngagementService {
@@ -38,6 +42,7 @@ export class EngagementService {
     @InjectRepository(Repost) private readonly repostRepo: Repository<Repost>,
     @InjectRepository(Post) private readonly postRepo: Repository<Post>,
     @InjectRepository(Media) private readonly mediaRepo: Repository<Media>,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 
     //* Services
     private readonly auditService: AuditLogService,
@@ -61,9 +66,17 @@ export class EngagementService {
     await queryRunner.startTransaction();
 
     try {
+      //* 0.Invalidate the cached post
+      const cachedKey = `post:${postId}:viewer:${userId}`;
+      await this.cacheManager.del(cachedKey);
       //* 1. Check if post exists
-      const post = await this.postRepo.findOneBy({ id: postId });
+      const post = await this.postRepo.findOne({
+        where: { id: postId },
+        relations: ['author'],
+      });
       if (!post) throw new NotFoundException('Post not found');
+      const feedKey = `userposts:${post.author.username}:viewer:${userId}`;
+      await this.cacheManager.del(feedKey);
       //* 2. Check for existing like
       const existingLike = await this.likeRepo.findOne({
         where: { post: { id: postId }, user: { id: userId } },
@@ -239,10 +252,17 @@ export class EngagementService {
     await queryRunner.startTransaction();
 
     try {
+      //* 0.Invalidate the cached post
+      const cachedKey = `post:${postId}:viewer:${userId}`;
+      await this.cacheManager.del(cachedKey);
       //* 1. Check if post exists
-      const post = await this.postRepo.findOneBy({ id: postId });
+      const post = await this.postRepo.findOne({
+        where: { id: postId },
+        relations: ['author'],
+      });
       if (!post) throw new NotFoundException('Post not found');
-
+      const feedKey = `userposts:${post.author.username}:viewer:${userId}`;
+      await this.cacheManager.del(feedKey);
       //* 2. Check for existing bookmark
       const existingBookmark = await this.bookmarkRepo.findOne({
         where: { post: { id: postId }, user: { id: userId } },
@@ -336,6 +356,141 @@ export class EngagementService {
     };
   }
 
+  //TODO ==================== PRIVATE HELPER FUNCTIONS ====================
+
+  /**
+   *todo-> Upload files to Cloudinary and return structured upload response
+   */
+  private async uploadFilesToCloudinary(files: Express.Multer.File[]) {
+    if (!files || files.length === 0) return [];
+
+    const uploadPromises = files.map((file) =>
+      this.cloudinary.uploadFile(file),
+    );
+    const uploadResults = await Promise.all(uploadPromises);
+
+    return uploadResults.map((result) => ({
+      url: result.secure_url || result.url,
+      resourceType: result.resource_type,
+      publicId: result.public_id,
+    }));
+  }
+
+  /**
+   *todo-> Delete files from Cloudinary
+   */
+  private async deleteFilesFromCloudinary(
+    uploadedMedia: { publicId: string; resourceType: string }[],
+  ) {
+    if (!uploadedMedia || uploadedMedia.length === 0) return;
+
+    await Promise.allSettled(
+      uploadedMedia.map((m) =>
+        this.cloudinary.deleteFile(m.publicId, m.resourceType),
+      ),
+    );
+  }
+
+  /**
+   *todo-----> Save media entities to database
+   */
+  private async saveMediaEntities(
+    queryRunner: QueryRunner,
+    uploadedMedia: { url: string; publicId: string; resourceType: string }[],
+    replyId: string,
+  ) {
+    if (!uploadedMedia || uploadedMedia.length === 0) return;
+
+    const mediaEntities = uploadedMedia.map((media) =>
+      this.mediaRepo.create({
+        mediaUrl: media.url,
+        publicId: media.publicId,
+        resourceType: media.resourceType,
+        reply: { id: replyId },
+      }),
+    );
+    await queryRunner.manager.save(Media, mediaEntities);
+  }
+
+  /**
+   *todo=> Update reply count for parent reply or post
+   */
+  private async updateReplyCount(
+    queryRunner: QueryRunner,
+    postId: string,
+    parentReplyId: string | undefined,
+    increment: number,
+  ) {
+    if (parentReplyId) {
+      await queryRunner.manager.increment(
+        Reply,
+        { id: parentReplyId },
+        'replyCount',
+        increment,
+      );
+    } else {
+      await queryRunner.manager.increment(
+        Post,
+        { id: postId },
+        'replyCount',
+        increment,
+      );
+    }
+  }
+
+  /**
+   *todo===> Process mentions and hashtags from content
+   */
+  private async processMentionsAndHashtags(
+    content: string | undefined,
+    postId: string,
+    userId: string,
+    replyId: string,
+  ) {
+    if (!content) return;
+
+    const hashtags = this.hashTagService.extractHashtags(content);
+    const mentions = this.mentionService.extractMentions(content);
+
+    if (hashtags.length > 0) {
+      await this.hashTagService.createHashtags(hashtags, postId);
+    }
+
+    if (mentions.length > 0) {
+      await this.mentionService.createMentions(
+        mentions,
+        postId,
+        userId,
+        replyId,
+      );
+    }
+  }
+
+  /**
+   *todo========> Delete old media and upload new media for reply update
+   */
+  private async updateReplyMedia(
+    queryRunner: QueryRunner,
+    originalMedia: Media[],
+    newFiles: Express.Multer.File[] | undefined,
+  ) {
+    if (newFiles && newFiles.length > 0) {
+      const uploadedMedia = await this.uploadFilesToCloudinary(newFiles);
+
+      if (originalMedia.length > 0) {
+        const allDeletePromises = originalMedia.flatMap((media) => [
+          queryRunner.manager.softDelete(Media, { id: media.id }),
+          this.cloudinary.deleteFile(media.publicId, media.resourceType),
+        ]);
+        await Promise.allSettled(allDeletePromises);
+      }
+
+      return uploadedMedia;
+    }
+
+    return [];
+  }
+
   //TODO ==================== CREATE REPLY ====================
   async createReply(
     postId: string,
@@ -356,18 +511,19 @@ export class EngagementService {
     }[] = [];
 
     try {
+      //* 0.Invalidate the cached post
+      const cachedKey = `post:${postId}:viewer:${userId}`;
+      await this.cacheManager.del(cachedKey);
       //* 1. Check if post exists
       const post = await this.postRepo.findOne({
-        where: {
-          id: postId,
-        },
-        select: {
-          id: true,
-          authorId: true,
-        },
+        where: { id: postId },
+        select: { id: true, authorId: true },
+        relations: ['author'],
       });
       if (!post) throw new NotFoundException('Post not found');
-
+      //* Invalidate cached feed
+      const feedKey = `userposts:${post.author.username}:viewer:${userId}`;
+      await this.cacheManager.del(feedKey);
       //* 2. Validate parent reply if provided
       if (createReplyDto.parentReplyId) {
         const parentReply = await this.replyRepo.findOneBy({
@@ -376,22 +532,14 @@ export class EngagementService {
         if (!parentReply) throw new NotFoundException('Parent reply not found');
       }
 
-      //* 3. Upload files if provided
-      if (files && files.length > 0) {
-        const uploadPromises = files.map((file) =>
-          this.cloudinary.uploadFile(file),
-        );
-        const uploadResults = await Promise.all(uploadPromises);
+      //* 3. Validate content/media
+      if (!createReplyDto.content && !files)
+        throw new BadRequestException('Content or image should exist');
 
-        uploadedResponse = uploadResults.map((result, index) => ({
-          url: result.secure_url || result.url,
-          resourceType: result.resource_type,
-          publicId: result.public_id,
-          order: index,
-        }));
-      }
+      //* 4. Upload files if provided
+      uploadedResponse = await this.uploadFilesToCloudinary(files!);
 
-      //* 4. Create reply
+      //* 5. Create and save reply
       const reply = this.replyRepo.create({
         content: createReplyDto.content,
         post: { id: postId },
@@ -400,77 +548,44 @@ export class EngagementService {
           ? { id: createReplyDto.parentReplyId }
           : undefined,
       });
-
       const savedReply = await queryRunner.manager.save(Reply, reply);
 
-      //* 5. Save media if files exist
-      if (uploadedResponse.length > 0) {
-        const mediaEntities = uploadedResponse.map((media) =>
-          this.mediaRepo.create({
-            mediaUrl: media.url,
-            publicId: media.publicId,
-            resourceType: media.resourceType,
-            reply: { id: savedReply.id },
-          }),
-        );
-        await queryRunner.manager.save(Media, mediaEntities);
-      }
+      //* 6. Save media
+      await this.saveMediaEntities(
+        queryRunner,
+        uploadedResponse,
+        savedReply.id,
+      );
 
-      //* 6. Update reply counts
-      if (createReplyDto.parentReplyId) {
-        //? Increment parent reply's replyCount
-        await queryRunner.manager.increment(
-          Reply,
-          { id: createReplyDto.parentReplyId },
-          'replyCount',
-          1,
-        );
-      } else {
-        //? Increment post's replyCount for top-level replies
-        await queryRunner.manager.increment(
-          Post,
-          { id: postId },
-          'replyCount',
-          1,
-        );
-      }
+      //* 7. Update reply counts
+      await this.updateReplyCount(
+        queryRunner,
+        postId,
+        createReplyDto.parentReplyId,
+        1,
+      );
+
       await queryRunner.commitTransaction();
-      //todo---<<<>> SEND NOTIFICATION TO AUTHOR, SOMEONE REPLIED YOUR POST
-      //* 4.1 Send notification
+
+      //* 8. Send notification
       await this.notificationService.createNotification({
         type: NotificationType.REPLY,
         recipientId: post.authorId,
         actorId: userId,
         postId: postId,
         replyId: savedReply.id,
-        metadata: {
-          content: savedReply.content,
-        },
+        metadata: { content: savedReply.content },
       });
 
-      //* <<<<<<<<<<<< EXTRACT MENTION & HASHTAG >>>>>>>>>>>>>>>>>>>>>>>
-      const hashtags = this.hashTagService.extractHashtags(
+      //* 9. Process mentions and hashtags
+      await this.processMentionsAndHashtags(
         createReplyDto.content,
+        postId,
+        userId,
+        savedReply.id,
       );
-      const mentions = this.mentionService.extractMentions(
-        createReplyDto.content,
-      );
-      //*<><><><> Save hashtags and mentions
 
-      if (hashtags.length > 0) {
-        await this.hashTagService.createHashtags(hashtags, postId);
-      }
-
-      if (mentions.length > 0) {
-        //* Will send notification inside the mention
-        await this.mentionService.createMentions(
-          mentions,
-          postId,
-          userId,
-          savedReply.id,
-        );
-      }
-      //* 7. Audit log
+      //* 10. Audit log
       await this.auditService.createLog({
         action: AuditAction.REPLY_CREATED,
         resource: AuditResource.REPLY,
@@ -493,15 +608,7 @@ export class EngagementService {
       });
     } catch (error) {
       await queryRunner.rollbackTransaction();
-
-      //* 8. Cleanup uploaded files on failure
-      if (uploadedResponse.length > 0) {
-        await Promise.allSettled(
-          uploadedResponse.map((m) =>
-            this.cloudinary.deleteFile(m.publicId, m.resourceType),
-          ),
-        );
-      }
+      await this.deleteFilesFromCloudinary(uploadedResponse);
       console.log(error);
       throw error;
     } finally {
@@ -509,15 +616,7 @@ export class EngagementService {
     }
   }
   /**
-   * TODO =========<<<<<<<<<< UPDATE EXISTING REPLY ====================
-   * @param postId
-   * @param userId
-   * @param updateDto
-   * @param replyId
-   * @param files
-   * @param ip
-   * @param userAgent
-   * @returns
+   * Update existing reply
    */
   async patchReply(
     postId: string,
@@ -529,76 +628,49 @@ export class EngagementService {
     userAgent?: string,
   ) {
     const queryRunner = this.dataSource.manager.connection.createQueryRunner();
-    queryRunner.connect();
-    queryRunner.startTransaction();
-
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     let uploadedResponse: {
       url: string;
       resourceType: string;
       publicId: string;
     }[] = [];
+
     try {
-      //* 1.Check if that reply exist
+      //* 1. Check if reply exists
       const originalReply = await this.replyRepo.findOne({
-        where: {
-          id: replyId,
-        },
-        select: {
-          id: true,
-          authorId: true,
-          media: true,
-        },
+        where: { id: replyId },
+        select: { id: true, authorId: true, media: true },
         relations: ['media'],
       });
       if (!originalReply) throw new NotFoundException('Reply not found');
-      //* 2.Check if the given post exist
+
+      //* 2. Check if post exists
       const post = await this.postRepo.findOne({
-        where: {
-          id: postId,
-        },
-        select: {
-          id: true,
-          authorId: true,
-        },
+        where: { id: postId },
+        select: { id: true, authorId: true },
       });
       if (!post) throw new NotFoundException('Post not found');
-      //* 3.Verify if the parent reply is available (if provided)
+      //* 3. Validate parent reply if provided
       if (updateDto.parentReplyId) {
-        const parentReply = await this.replyRepo.findOne({
-          where: {
-            id: updateDto.parentReplyId,
-          },
+        const parentReply = await this.replyRepo.findOneBy({
+          id: updateDto.parentReplyId,
         });
-        if (parentReply)
-          throw new NotFoundException('Parent  reply not found not found');
+        if (!parentReply) throw new NotFoundException('Parent reply not found');
       }
-      //* 4.1Upload and delete old media files => if provided & available
-      if (files && files.length > 0) {
-        //* 4.1 Upload new media
-        const uploadPromises = files.map((file) =>
-          this.cloudinary.uploadFile(file),
-        );
-        //* ==> Parallel Upload
-        const uploadResponse = await Promise.all(uploadPromises);
-        uploadedResponse = uploadResponse.map((result) => ({
-          url: result.secure_url || result.url,
-          resourceType: result.resource_type,
-          publicId: result.public_id,
-        }));
-        //* 4.2 Check if the original reply had media
-        if (originalReply.media.length > 0) {
-          //? Delete the old media files
-          const allDeletePromises = originalReply.media.flatMap((media) => [
-            //* Database delete
-            queryRunner.manager.softDelete(Media, { id: media.id }),
-            //* Cloudinary delete
-            this.cloudinary.deleteFile(media.publicId, media.resourceType),
-          ]);
-          //* Execute ALL in parallel
-          await Promise.allSettled(allDeletePromises);
-        }
-      }
-      //* 5.Update the existing reply
+
+      //* 4. Validate content/media
+      if (!updateDto.content?.trim() && (!files || files.length === 0))
+        throw new BadRequestException('Content or File is needed');
+
+      //* 5. Update media (delete old, upload new)
+      uploadedResponse = await this.updateReplyMedia(
+        queryRunner,
+        originalReply.media,
+        files,
+      );
+
+      //* 6. Update reply
       const reply = this.replyRepo.create({
         content: updateDto.content,
         parentReply: updateDto.parentReplyId
@@ -608,54 +680,41 @@ export class EngagementService {
         author: { id: userId },
       });
       await queryRunner.manager.update(Reply, { id: replyId }, reply);
+
       const updatedReply = await this.replyRepo.findOne({
         where: { id: replyId },
       });
-      //* 6.Save media files if they exist
-      if (updatedReply && uploadedResponse.length > 0) {
-        const mediaEntities = uploadedResponse.map((media) =>
-          this.mediaRepo.create({
-            mediaUrl: media.url,
-            publicId: media.publicId,
-            resourceType: media.resourceType,
-            reply: { id: updatedReply.id },
-          }),
-        );
-        await queryRunner.manager.save(Media, mediaEntities);
-      }
       if (!updatedReply)
-        throw new ConflictException('Post could not be updated');
+        throw new ConflictException('Reply could not be updated');
+
+      //* 7. Save new media
+      await this.saveMediaEntities(
+        queryRunner,
+        uploadedResponse,
+        updatedReply.id,
+      );
+
       await queryRunner.commitTransaction();
-      //todo---<<<>> SEND NOTIFICATION TO AUTHOR, SOMEONE REPLIED YOUR POST
-      //* 4.1 Send notification
+
+      //* 8. Send notification
       await this.notificationService.createNotification({
         type: NotificationType.REPLY,
         recipientId: updatedReply.authorId,
         actorId: userId,
         postId: postId,
         replyId: updatedReply.id,
-        metadata: {
-          content: updatedReply.content,
-        },
+        metadata: { content: updatedReply.content },
       });
-      //* <<<<<<<<<<<< EXTRACT MENTION & HASHTAG >>>>>>>>>>>>>>>>>>>>>>>
-      const hashtags = this.hashTagService.extractHashtags(updateDto.content);
-      const mentions = this.mentionService.extractMentions(updateDto.content);
-      //*<><><><> Save hashtags and mentions
 
-      if (hashtags.length > 0) {
-        await this.hashTagService.createHashtags(hashtags, postId);
-      }
-      if (mentions.length > 0) {
-        //* Will send notification inside the mention
-        await this.mentionService.createMentions(
-          mentions,
-          postId,
-          userId,
-          updatedReply.id,
-        );
-      }
-      //* 7. Audit log
+      //* 9. Process mentions and hashtags
+      await this.processMentionsAndHashtags(
+        updateDto.content,
+        postId,
+        userId,
+        updatedReply.id,
+      );
+
+      //* 10. Audit log
       await this.auditService.createLog({
         action: AuditAction.REPLY_UPDATED,
         resource: AuditResource.REPLY,
@@ -673,21 +732,14 @@ export class EngagementService {
       const replyWithRelation = await this.getReplyWithRelations(
         updatedReply.id,
       );
+
       return plainToInstance(ReplyResponseDto, replyWithRelation, {
         excludeExtraneousValues: true,
         exposeUnsetFields: false,
       });
     } catch (error) {
       await queryRunner.rollbackTransaction();
-
-      //* 8. Cleanup uploaded files on failure
-      if (uploadedResponse.length > 0) {
-        await Promise.allSettled(
-          uploadedResponse.map((m) =>
-            this.cloudinary.deleteFile(m.publicId, m.resourceType),
-          ),
-        );
-      }
+      await this.deleteFilesFromCloudinary(uploadedResponse);
       console.log(error);
       throw error;
     } finally {
@@ -779,7 +831,6 @@ export class EngagementService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-
     try {
       //* 1. Find reply and verify ownership
       const reply = await this.replyRepo.findOne({
@@ -852,12 +903,19 @@ export class EngagementService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-
+    //* 0.Invalidate the cached post
+    const cachedKey = `post:${postId}:viewer:${userId}`;
+    await this.cacheManager.del(cachedKey);
     try {
       //* 1. Check if post exists
-      const originalPost = await this.postRepo.findOneBy({ id: postId });
+      const originalPost = await this.postRepo.findOne({
+        where: { id: postId },
+        relations: ['author'],
+      });
       if (!originalPost) throw new NotFoundException('Post not found');
 
+      const feedKey = `userposts:${originalPost.author.username}:viewer:${userId}`;
+      await this.cacheManager.del(feedKey);
       //* 2. Check for existing repost
       const existingRepost = await this.repostRepo.findOne({
         where: {
