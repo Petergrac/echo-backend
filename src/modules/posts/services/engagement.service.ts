@@ -230,6 +230,7 @@ export class EngagementService {
 
     return {
       posts,
+      likeCount: total,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -346,6 +347,7 @@ export class EngagementService {
     }));
     return {
       posts,
+      bookmarkCount: total,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -1067,46 +1069,57 @@ export class EngagementService {
 
   //TODO ==================== GET USER REPOSTS ====================
   async getUserReposts(userId: string, page: number = 1, limit: number = 20) {
-    const [reposts, total] = await this.repostRepo.findAndCount({
-      where: { user: { id: userId } },
-      relations: ['originalPost', 'originalPost.author', 'originalPost.media'],
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    try {
+      const queryBuilder = this.repostRepo
+        .createQueryBuilder('repost')
+        .leftJoinAndSelect('repost.originalPost', 'originalPost')
+        .leftJoinAndSelect('originalPost.author', 'author')
+        .leftJoinAndSelect('originalPost.media', 'media')
+        .where('repost.userId = :userId', { userId })
+        .andWhere('originalPost.deletedAt IS NULL') //? Exclude soft-deleted posts
+        .orderBy('repost.createdAt', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit);
 
-    // Get post status for all reposted posts
-    const postIds = reposts.map((repost) => repost.originalPost.id);
-    const statusMap = await this.postStatusService.getPostsStatus(
-      postIds,
-      userId,
-    );
+      const [reposts, total] = await queryBuilder.getManyAndCount();
 
-    const posts = reposts.map((repost) => ({
-      ...plainToInstance(PostResponseDto, repost.originalPost, {
-        excludeExtraneousValues: true,
-        exposeUnsetFields: false,
-      }),
-      ...(statusMap[repost.originalPost.id] || {
-        hasLiked: false,
-        hasBookmarked: false,
-        hasReposted: true, // This is always true since we're in reposted posts
-        hasReplied: false,
-      }),
-      repostContent: repost.content, //? Include repost commentary
-      repostedAt: repost.createdAt, //? Include when user reposted it
-    }));
+      //* Get post status for all reposted posts
+      const postIds = reposts.map((repost) => repost.originalPostId);
+      const statusMap = await this.postStatusService.getPostsStatus(
+        postIds,
+        userId,
+      );
 
-    return {
-      posts,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalItems: total,
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPrevPage: page > 1,
-      },
-    };
+      const posts = reposts.map((repost) => ({
+        ...plainToInstance(PostResponseDto, repost.originalPost, {
+          excludeExtraneousValues: true,
+          exposeUnsetFields: false,
+        }),
+        ...(statusMap[repost.originalPostId] || {
+          hasLiked: false,
+          hasBookmarked: false,
+          hasReposted: true,
+          hasReplied: false,
+        }),
+        repostContent: repost.content, //? Include repost commentary
+        repostedAt: repost.createdAt, //? Include when user reposted it
+      }));
+
+      return {
+        posts,
+        totalReposts: total,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          totalItems: total,
+          hasNextPage: page < Math.ceil(total / limit),
+          hasPrevPage: page > 1,
+        },
+      };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
   //? ==================== UTILITY METHODS ====================
 

@@ -61,12 +61,28 @@ export class NotificationPreferenceService {
           },
         ); //* No change
       //* 3.Apply updates
+      if (updateDto.mutedUsers && updateDto.mutedUsers?.length > 0) {
+        this.logger.debug(
+          `Looking for users: ${JSON.stringify(updateDto.mutedUsers)}`,
+        );
+        const mutedUserIds = await this.userRepo
+          .createQueryBuilder('user')
+          .select('user.id')
+          .where('LOWER(user.username) IN (:...usernames)', {
+            usernames: updateDto.mutedUsers.map((u) => u.toLowerCase()),
+          })
+          .getMany();
+
+        if (mutedUserIds.length === 0) {
+          this.logger.warn(
+            `No users found with usernames: ${updateDto.mutedUsers.join(', ')}`,
+          );
+        }
+        updateDto.mutedUsers = mutedUserIds.map((u) => u.id);
+      }
       Object.assign(preferences, updateDto);
       //* 4.Save updated preferences
       const savedPreferences = await this.prefRepo.save(preferences);
-      this.logger.log(
-        `updated notification preferences for user:${userId}, fields:${updatedFields.join(',')}`,
-      );
       return plainToInstance(
         NotificationPreferencesResponseDto,
         savedPreferences,

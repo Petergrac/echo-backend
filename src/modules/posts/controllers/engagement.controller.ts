@@ -215,7 +215,6 @@ export class EngagementController {
     @Query('limit') limit: number,
   ) {
     const userId = (req.user as { userId: string }).userId;
-
     return await this.engagementService.getUserReposts(userId, page, limit);
   }
 }

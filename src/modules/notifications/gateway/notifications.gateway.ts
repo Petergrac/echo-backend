@@ -49,6 +49,7 @@ interface OnlineUser {
     origin: '*',
     credentials: true,
   },
+  transports: ['websocket', 'polling'],
 })
 @Injectable()
 export class NotificationsGateway
@@ -272,13 +273,21 @@ export class NotificationsGateway
   }
 
   private extractTokenFromHeader(client: Socket): string | undefined {
-    //* 1. Try socket.io auth payload
+    //* 1.Try cookies
+    const cookies = client.handshake.headers.cookie;
+    if (cookies) {
+      const tokenCookie = cookies
+        .split(';')
+        .find((c) => c.trim().startsWith('access_token='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+    }
+    //* 2. Try socket.io auth payload
     const authToken = client.handshake.auth?.token;
     if (authToken) {
       return authToken;
     }
 
-    //* 2. Try Authorization header
+    //* 3. Try Authorization header
     const header = client.handshake.headers?.authorization;
     if (header) {
       return header;

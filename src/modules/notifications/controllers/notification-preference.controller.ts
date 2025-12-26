@@ -44,7 +44,6 @@ export class NotificationPreferencesController {
     @Body() updateDto: UpdatePreferencesDto,
   ) {
     const userId = (req.user as { userId: string }).userId;
-    console.log(updateDto);
     return await this.preferencesService.updateUserPreferences(
       userId,
       updateDto,
