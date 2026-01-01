@@ -76,8 +76,9 @@ export class NotificationsService {
       }
 
       //* 3. Validate post exists if postId provided
+      let post;
       if (data.postId) {
-        const post = await this.postRepo.findOneBy({ id: data.postId });
+        post = await this.postRepo.findOneBy({ id: data.postId });
         if (!post) {
           this.logger.warn(`Post not found: ${data.postId}`);
           throw new NotFoundException('Post not found');
@@ -85,8 +86,9 @@ export class NotificationsService {
       }
 
       //* 4. Validate reply exists if replyId provided
+      let reply;
       if (data.replyId) {
-        const reply = await this.replyRepo.findOneBy({ id: data.replyId });
+        reply = await this.replyRepo.findOneBy({ id: data.replyId });
         if (!reply) {
           this.logger.warn(`Reply not found: ${data.replyId}`);
           throw new NotFoundException('Reply not found');
@@ -151,6 +153,16 @@ export class NotificationsService {
       });
 
       const savedNotification = await this.notificationRepo.save(notification);
+      savedNotification.actor = actor;
+      savedNotification.recipient = recipient;
+
+      if (data.postId) {
+        savedNotification.post = post;
+      }
+
+      if (data.replyId) {
+        savedNotification.reply = reply;
+      }
 
       this.logger.log(
         `Created ${data.type} notification for user: ${data.recipientId}`,
@@ -169,7 +181,7 @@ export class NotificationsService {
             this.logger.error('Failed to send websocket notification', error);
           });
       }
-      return savedNotification;
+      return;
     } catch (error) {
       this.logger.error(
         `Error creating notification: ${error.message}`,
@@ -365,37 +377,54 @@ export class NotificationsService {
       this.notificationRepo.manager.connection.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-
     try {
       //* 1. Find notification and verify ownership
       const notification = await this.notificationRepo.findOne({
-        where: { id: notificationId },
-        relations: ['recipient'],
+        where: {
+          recipientId: userId,
+        },
       });
-
       if (!notification) {
         throw new NotFoundException('Notification not found');
       }
 
-      if (notification.recipient.id !== userId) {
+      if (notification.recipientId !== userId) {
         throw new ForbiddenException(
           'You can only delete your own notifications',
         );
       }
-
       //* 2. Soft delete the notification
       await queryRunner.manager.softDelete(Notification, {
         id: notificationId,
       });
       await queryRunner.commitTransaction();
-
-      this.logger.log(`Deleted notification: ${notificationId}`);
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      this.logger.error(`Error deleting notification: ${error.message}`);
+      console.log(error);
       throw error;
     } finally {
       await queryRunner.release();
+    }
+  }
+  async deleteAll(userId: string) {
+    try {
+      //* 1. Validate user exists
+      const user = await this.userRepo.findOneBy({ id: userId });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      //* 2. Soft delete by FK column
+      const result = await this.notificationRepo.softDelete({
+        recipient: { id: userId },
+      });
+
+      //* 3. Alert websocket
+      this.notificationGateway.clearNotifications(userId);
+
+      return { deletedCount: result.affected ?? 0 };
+    } catch (error) {
+      console.log(error);
     }
   }
 

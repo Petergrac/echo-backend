@@ -112,7 +112,7 @@ export class NotificationsGateway
       const unreadCount = await this.notificationsService.getUnreadCount(
         user.sub,
       );
-      client.emit('unread-count', { count: unreadCount });
+      client.emit('unread_count', { count: unreadCount });
 
       this.logger.log(
         `🔗 User ${userFromDatabase.username} connected to notifications. Online: ${this.onlineUsers.size}`,
@@ -136,7 +136,11 @@ export class NotificationsGateway
       this.logger.error(`Disconnection error for client ${client.id}`, error);
     }
   }
-
+  clearNotifications(userId: string) {
+    this.server.to(`user:${userId}`).emit('clear_notifications', {
+      message: 'All notifications have been deleted',
+    });
+  }
   //TODO ================ SEND NOTIFICATION TO SINGLE USER =====================
   async sendNotificationToUser(userId: string, notification: any) {
     try {

@@ -23,6 +23,12 @@ export class Notification extends CoreEntity {
   })
   type: NotificationType;
 
+  @Column()
+  recipientId: string;
+
+  @Column()
+  actorId: string;
+
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   recipient: User;
 

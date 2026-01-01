@@ -68,4 +68,14 @@ export class NotificationsController {
     await this.notificationsService.deleteNotification(notificationId, userId);
     return { message: 'Notification deleted successfully' };
   }
+  @Delete('delete/delete-all')
+  async deleteAllNotifications(@Req() req: Request) {
+    try {
+      const userId = (req.user as { userId: string }).userId;
+      await this.notificationsService.deleteAll(userId);
+      return { message: 'All notifications have been deleted' };
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }
