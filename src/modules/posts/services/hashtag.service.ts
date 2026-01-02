@@ -183,9 +183,12 @@ export class HashtagService {
         .getManyAndCount();
 
       //* 3. Get post status for all posts
-      const postIds = posts.map((post) => post.id);
+      const postsInfo = posts.map((post) => ({
+        postId: post.id,
+        authorId: post.authorId,
+      }));
       const statusMap = await this.postStatusService.getPostsStatus(
-        postIds,
+        postsInfo,
         userId,
       );
 

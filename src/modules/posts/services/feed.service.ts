@@ -66,14 +66,17 @@ export class FeedService {
           scoreFactors: item.factors,
         }));
       //* 5. Increment view counts
-      const postIds = sortedPosts.map((item) => item.post.id);
+      const postInfo = sortedPosts.map((item) => ({
+        postId: item.post.id,
+        authorId: item.post.authorId,
+      }));
       await Promise.allSettled(
-        postIds.map((id) => this.incrementViewCount(id)),
+        postInfo.map((info) => this.incrementViewCount(info.postId)),
       );
 
       //* 6. Get post status
       const statusMap = await this.postStatusService.getPostsStatus(
-        postIds,
+        postInfo,
         userId,
       );
 
@@ -84,6 +87,7 @@ export class FeedService {
           hasBookmarked: false,
           hasReposted: false,
           hasReplied: false,
+          isFollowingAuthor: false,
         };
 
         return {
@@ -155,12 +159,15 @@ export class FeedService {
         .map((item) => item.post);
 
       //* Get post status
-      const postIds = sortedPosts.map((post) => post.id);
+      const postInfo = sortedPosts.map((post) => ({
+        postId: post.id,
+        authorId: post.authorId,
+      }));
       await Promise.allSettled(
-        postIds.map((id) => this.incrementViewCount(id)),
+        postInfo.map((info) => this.incrementViewCount(info.postId)),
       );
       const statusMap = await this.postStatusService.getPostsStatus(
-        postIds,
+        postInfo,
         userId,
       );
 
@@ -171,6 +178,7 @@ export class FeedService {
           hasBookmarked: false,
           hasReposted: false,
           hasReplied: false,
+          isFollowingAuthor: false,
         };
 
         return {
@@ -220,12 +228,15 @@ export class FeedService {
         .limit(limit)
         .getMany();
 
-      const postIds = posts.map((post) => post.id);
+      const postInfo = posts.map((post) => ({
+        postId: post.id,
+        authorId: post.authorId,
+      }));
       await Promise.allSettled(
-        postIds.map((id) => this.incrementViewCount(id)),
+        postInfo.map((info) => this.incrementViewCount(info.postId)),
       );
       const statusMap = await this.postStatusService.getPostsStatus(
-        postIds,
+        postInfo,
         userId,
       );
 
@@ -235,6 +246,7 @@ export class FeedService {
           hasBookmarked: false,
           hasReposted: false,
           hasReplied: false,
+          isFollowingAuthor: false,
         };
 
         return {
@@ -284,12 +296,15 @@ export class FeedService {
           .getMany();
 
         // Process posts
-        const postIds = ownPosts.map((post) => post.id);
+        const postInfo = ownPosts.map((post) => ({
+          postId: post.id,
+          authorId: post.authorId,
+        }));
         await Promise.allSettled(
-          postIds.map((id) => this.incrementViewCount(id)),
+          postInfo.map((info) => this.incrementViewCount(info.postId)),
         );
         const statusMap = await this.postStatusService.getPostsStatus(
-          postIds,
+          postInfo,
           userId,
         );
 
@@ -337,23 +352,27 @@ export class FeedService {
         .limit(limit)
         .getMany();
 
-      // Get post status
-      const postIds = posts.map((post) => post.id);
+      //* Get post status
+      const postInfo = posts.map((post) => ({
+        postId: post.id,
+        authorId: post.authorId,
+      }));
       await Promise.allSettled(
-        postIds.map((id) => this.incrementViewCount(id)),
+        postInfo.map((info) => this.incrementViewCount(info.postId)),
       );
       const statusMap = await this.postStatusService.getPostsStatus(
-        postIds,
+        postInfo,
         userId,
       );
 
-      // Merge posts with their status
+      //* Merge posts with their status
       const postsWithStatus = posts.map((post) => {
         const status = statusMap[post.id] || {
           hasLiked: false,
           hasBookmarked: false,
           hasReposted: false,
           hasReplied: false,
+          isFollowingAuthor: false,
         };
 
         return {

@@ -123,17 +123,6 @@ export class PostsController {
    * @param limit
    * @returns
    */
-  //TODO ============== GET HOME FEED ===================
-  @Throttle({ default: { ttl: 6000, limit: 30 } })
-  @Get('feed/me')
-  async getMyHomeFeed(
-    @Req() req: Request,
-    @Query('page') page: number,
-    @Query('limit') limit: number,
-  ) {
-    const userId = (req.user as { userId: string }).userId;
-    return await this.postsService.getFeed(userId, page, limit);
-  }
   //TODO ==================== ALGORITHMIC FEED (MUTUAL FOLLOWING) ====================
   @Get('feed/for-you')
   @Throttle({ default: { ttl: 6000, limit: 30 } })

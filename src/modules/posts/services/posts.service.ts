@@ -101,6 +101,7 @@ export class PostsService {
       const postStatus = await this.postStatusService.getPostStatus(
         savedPost.id,
         userId,
+        savedPost.authorId,
       );
       //* 4. Commit transaction
       await queryRunner.commitTransaction();
@@ -225,7 +226,8 @@ export class PostsService {
     });
     const postStatus = await this.postStatusService.getPostStatus(
       postId,
-      viewerId,
+      viewerId!,
+      post.authorId,
     );
     const transformedPost = {
       ...plainToInstance(PostResponseDto, post, {
@@ -314,6 +316,7 @@ export class PostsService {
       const postStatus = await this.postStatusService.getPostStatus(
         postId,
         userId,
+        post.authorId,
       );
       return {
         post: {
@@ -422,11 +425,14 @@ export class PostsService {
     const [posts, total] = await query.getManyAndCount();
 
     //* 4. Get post status for all posts
-    const postIds = posts.map((post) => post.id);
-    postIds.map(async (id) => await this.incrementViewCount(id));
+    const postsInfo = posts.map((post) => ({
+      postId: post.id,
+      authorId: post.authorId,
+    }));
+    postsInfo.map(async (info) => await this.incrementViewCount(info.postId));
     const statusMap = await this.postStatusService.getPostsStatus(
-      postIds,
-      viewerId,
+      postsInfo,
+      viewerId!,
     );
     //* 5.Map posts with their status
     const postsWithStatus = posts.map((post) => ({
@@ -436,6 +442,7 @@ export class PostsService {
         hasBookmarked: false,
         hasReposted: false,
         hasReplied: false,
+        isFollowingAuthor: false,
       }),
     }));
     const result = {
@@ -460,66 +467,6 @@ export class PostsService {
       metadata: { targetUsername: username, page, limit },
     });
     return result;
-  }
-
-  //TODO ==================== GET USER FEED ====================
-  async getFeed(userId: string, page: number = 1, limit: number = 20) {
-    //* 1. Get posts from followed users + own posts
-    const [posts, total] = await this.postRepo
-      .createQueryBuilder('post')
-      .innerJoin('post.author', 'author')
-      .leftJoin(
-        'author.followers',
-        'followers',
-        'followers.followerId = :userId',
-        { userId },
-      )
-      .leftJoinAndSelect('post.media', 'media')
-      .leftJoinAndSelect('post.author', 'postAuthor')
-      .where('post.deletedAt IS NULL')
-      .andWhere('(post.authorId = :userId OR followers.followerId = :userId)', {
-        userId,
-      })
-      .andWhere('(post.visibility = :public OR post.visibility = :followers)', {
-        public: 'public',
-        followers: 'followers',
-      })
-      .orderBy('post.createdAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
-
-    //* 4. Get post status for all posts
-    const postIds = posts.map((post) => post.id);
-    postIds.map(async (id) => await this.incrementViewCount(id));
-    const statusMap = await this.postStatusService.getPostsStatus(
-      postIds,
-      userId,
-    );
-    //* 5.Map posts with their status
-    const postsWithStatus = posts.map((post) => ({
-      ...post,
-      ...(statusMap[post.id] || {
-        hasLiked: false,
-        hasBookmarked: false,
-        hasReposted: false,
-        hasReplied: false,
-      }),
-    }));
-
-    return {
-      posts: plainToInstance(PostResponseDto, postsWithStatus, {
-        excludeExtraneousValues: true,
-        exposeUnsetFields: false,
-      }),
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalItems: total,
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPrevPage: page > 1,
-      },
-    };
   }
 
   //? ==================== UTILITY METHODS ====================

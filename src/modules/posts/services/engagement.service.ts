@@ -209,9 +209,12 @@ export class EngagementService {
       take: limit,
     });
     //* 2.Get post status for all liked posts
-    const postIds = likes.map((like) => like.post.id);
+    const postInfo = likes.map((like) => ({
+      postId: like.post.id,
+      authorId: like.post.authorId,
+    }));
     const statusMap = await this.postStatusService.getPostsStatus(
-      postIds,
+      postInfo,
       userId,
     );
 
@@ -224,6 +227,7 @@ export class EngagementService {
         hasBookmarked: false,
         hasReposted: false,
         hasReplied: false,
+        isFollowingAuthor: false,
       }),
       likedAt: like.createdAt, //? Include when user liked it
     }));
@@ -326,9 +330,12 @@ export class EngagementService {
     });
 
     //* 2.Get post status for all bookmarked posts
-    const postIds = bookmarks.map((bookmark) => bookmark.post.id);
+    const bookmarkInfo = bookmarks.map((bookmark) => ({
+      postId: bookmark.post.id,
+      authorId: bookmark.post.authorId,
+    }));
     const statusMap = await this.postStatusService.getPostsStatus(
-      postIds,
+      bookmarkInfo,
       userId,
     );
 
@@ -342,6 +349,7 @@ export class EngagementService {
         hasBookmarked: true,
         hasReposted: false,
         hasReplied: false,
+        isFollowingAuthor: false,
       }),
       bookmarkedAt: bookmark.createdAt, //? Include when user bookmarked it
     }));
@@ -1084,7 +1092,10 @@ export class EngagementService {
       const [reposts, total] = await queryBuilder.getManyAndCount();
 
       //* Get post status for all reposted posts
-      const postIds = reposts.map((repost) => repost.originalPostId);
+      const postIds = reposts.map((repost) => ({
+        postId: repost.originalPostId,
+        authorId: repost.originalPost.authorId,
+      }));
       const statusMap = await this.postStatusService.getPostsStatus(
         postIds,
         userId,
@@ -1100,6 +1111,7 @@ export class EngagementService {
           hasBookmarked: false,
           hasReposted: true,
           hasReplied: false,
+          isFollowingAuthor: false,
         }),
         repostContent: repost.content, //? Include repost commentary
         repostedAt: repost.createdAt, //? Include when user reposted it
