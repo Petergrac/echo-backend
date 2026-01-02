@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { NotificationPreferences } from '../entities/notification-preferences.entity';
 import { Repository } from 'typeorm';
@@ -6,6 +6,8 @@ import { User } from '../../auth/entities/user.entity';
 import { UpdatePreferencesDto } from '../dto/update-preference.dto';
 import { plainToInstance } from 'class-transformer';
 import { NotificationPreferencesResponseDto } from '../dto/response-preferences.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class NotificationPreferenceService {
@@ -15,11 +17,17 @@ export class NotificationPreferenceService {
     private readonly prefRepo: Repository<NotificationPreferences>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   //TODO -------------------- GET USER PREFERENCES =================
   async getUserPreferences(userId: string) {
     try {
+      const cacheKey = `user-preferences-${userId}`;
+      const cachedPreferences = (await this.cacheManager.get(
+        cacheKey,
+      )) as NotificationPreferences;
+      if (cachedPreferences) return cachedPreferences;
       const preferences = await this.prefRepo.findOne({
         where: { userId },
         relations: ['user'],
@@ -83,6 +91,7 @@ export class NotificationPreferenceService {
       Object.assign(preferences, updateDto);
       //* 4.Save updated preferences
       const savedPreferences = await this.prefRepo.save(preferences);
+      this.cacheManager.del(`user-preferences-${userId}`);
       return plainToInstance(
         NotificationPreferencesResponseDto,
         savedPreferences,
@@ -122,7 +131,7 @@ export class NotificationPreferenceService {
       this.logger.log(
         `${mute ? 'Muted' : 'Unmuted'} user ${targetUserId} for user: ${userId}`,
       );
-
+      this.cacheManager.del(`user-preferences-${userId}`);
       return plainToInstance(
         NotificationPreferencesResponseDto,
         savedPreferences,
@@ -162,7 +171,7 @@ export class NotificationPreferenceService {
       }
 
       const savedPreferences = await this.prefRepo.save(preferences);
-
+      this.cacheManager.del(`user-preferences-${userId}`);
       this.logger.log(
         `${mute ? 'Muted' : 'Unmuted'} keyword "${keyword}" for user: ${userId}`,
       );
@@ -189,7 +198,7 @@ export class NotificationPreferenceService {
       await this.prefRepo.delete({ userId });
 
       const defaultPreferences = await this.createDefaultPreferences(userId);
-
+      this.cacheManager.del(`user-preferences-${userId}`);
       this.logger.log(
         `Reset notification preferences to defaults for user: ${userId}`,
       );

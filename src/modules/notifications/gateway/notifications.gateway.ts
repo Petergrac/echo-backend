@@ -26,8 +26,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
 import { NotificationPreferenceService } from '../services/notification-preference.service';
-import { plainToInstance } from 'class-transformer';
-import { NotificationPreferencesResponseDto } from '../dto/response-preferences.dto';
 
 interface OnlineUser {
   socketId: string;
@@ -244,13 +242,11 @@ export class NotificationsGateway
   }
 
   //TODO =============== GET USER PREFERENCES ====================
-  @SubscribeMessage('get_my_preferences')
+  @SubscribeMessage('get_muted_users')
   async getUserPreferences(@ConnectedSocket() client: Socket) {
     const user = client.data.user as { sub: string };
     const response = await this.prefService.getUserPreferences(user.sub);
-    return plainToInstance(NotificationPreferencesResponseDto, response, {
-      excludeExtraneousValues: true,
-    });
+    return { mutedUsers: response.mutedUsers };
   }
   //TODO ================== RESET PREFERENCES ===============
   @SubscribeMessage('reset_notifications')
