@@ -7,7 +7,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { DataSource, IsNull, Not, QueryRunner, Repository } from 'typeorm';
 import { AuditLogService } from '../../../common/services/audit.service';
 import { CloudinaryService } from '../../../common/cloudinary/cloudinary.service';
 import { Bookmark } from '../entities/bookmark.entity';
@@ -202,7 +202,7 @@ export class EngagementService {
   ) {
     //* 1.Get all liked posts by this user
     const [likes, total] = await this.likeRepo.findAndCount({
-      where: { user: { id: userId } },
+      where: { user: { id: userId }, post: { id: Not(IsNull()) } },
       relations: ['post', 'post.author', 'post.media'],
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
@@ -319,51 +319,55 @@ export class EngagementService {
   }
 
   //TODO ==================== GET USER BOOKMARKS ====================
-  async getUserBookmarks(userId: string, page: number = 1, limit: number = 20) {
-    //* 1.Get bookmarks and total count
-    const [bookmarks, total] = await this.bookmarkRepo.findAndCount({
-      where: { user: { id: userId } },
-      relations: ['post', 'post.author', 'post.media'],
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+  async getUserBookmarks(userId: string, page: number = 1, limit: number = 5) {
+    try {
+      //* 1.Get bookmarks and total count
+      const [bookmarks, total] = await this.bookmarkRepo.findAndCount({
+        where: { user: { id: userId }, post: { id: Not(IsNull()) } },
+        relations: ['post', 'post.author', 'post.media'],
+        order: { createdAt: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+      //* 2.Get post status for all bookmarked posts
+      const bookmarkInfo = bookmarks.map((bookmark) => ({
+        postId: bookmark.postId,
+        authorId: bookmark.post.authorId,
+      }));
+      const statusMap = await this.postStatusService.getPostsStatus(
+        bookmarkInfo,
+        userId,
+      );
 
-    //* 2.Get post status for all bookmarked posts
-    const bookmarkInfo = bookmarks.map((bookmark) => ({
-      postId: bookmark.post.id,
-      authorId: bookmark.post.authorId,
-    }));
-    const statusMap = await this.postStatusService.getPostsStatus(
-      bookmarkInfo,
-      userId,
-    );
-
-    const posts = bookmarks.map((bookmark) => ({
-      ...plainToInstance(PostResponseDto, bookmark.post, {
-        excludeExtraneousValues: true,
-        exposeUnsetFields: false,
-      }),
-      ...(statusMap[bookmark.post.id] || {
-        hasLiked: false,
-        hasBookmarked: true,
-        hasReposted: false,
-        hasReplied: false,
-        isFollowingAuthor: false,
-      }),
-      bookmarkedAt: bookmark.createdAt, //? Include when user bookmarked it
-    }));
-    return {
-      posts,
-      bookmarkCount: total,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalItems: total,
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPrevPage: page > 1,
-      },
-    };
+      const posts = bookmarks.map((bookmark) => ({
+        ...plainToInstance(PostResponseDto, bookmark.post, {
+          excludeExtraneousValues: true,
+          exposeUnsetFields: false,
+        }),
+        ...(statusMap[bookmark.post.id] || {
+          hasLiked: false,
+          hasBookmarked: true,
+          hasReposted: false,
+          hasReplied: false,
+          isFollowingAuthor: false,
+        }),
+        bookmarkedAt: bookmark.createdAt, //? Include when user bookmarked it
+      }));
+      return {
+        posts,
+        bookmarkCount: total,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          totalItems: total,
+          hasNextPage: page < Math.ceil(total / limit),
+          hasPrevPage: page > 1,
+        },
+      };
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 
   //TODO ==================== PRIVATE HELPER FUNCTIONS ====================
@@ -1084,6 +1088,7 @@ export class EngagementService {
         .leftJoinAndSelect('originalPost.author', 'author')
         .leftJoinAndSelect('originalPost.media', 'media')
         .where('repost.userId = :userId', { userId })
+        .andWhere('originalPost.id IS NOT NULL')
         .andWhere('originalPost.deletedAt IS NULL') //? Exclude soft-deleted posts
         .orderBy('repost.createdAt', 'DESC')
         .skip((page - 1) * limit)

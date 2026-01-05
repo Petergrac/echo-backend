@@ -66,7 +66,7 @@ Response:
   "accessToken": "eyJhbGc...",
   "user": { id, email, username, ... }
 }
-Set-Cookie: refresh_token=...
+Set-Cookie: refresh_token=..., access_token=...,
 ```
 
 ### 2. User Login
@@ -89,8 +89,8 @@ Body: { email OR username, password }
   ↓
 [Audit Log] - Record login attempt
   ↓
-Response: { accessToken, user }
-Set-Cookie: refresh_token=...
+Response: null,
+Set-Cookie: refresh_token=...,access_token=....,
 ```
 
 ### 3. Token Refresh
@@ -109,8 +109,8 @@ Headers: Cookie: refresh_token=...
   ↓
 [Invalidate Old] - Mark old refresh token as used
   ↓
-Response: { accessToken }
-Set-Cookie: new_refresh_token=...
+Response: {success:true,message:"Token rotated"}
+Set-Cookie: new_refresh_token=...,new_access_token=...,
 ```
 
 ### 4. Logout (Single Device)

@@ -58,25 +58,37 @@ export class Post extends CoreEntity {
   /**
    * TODO ================ RELATIONS =======
    */
-  @OneToMany(() => Like, (like) => like.post)
+  @OneToMany(() => Like, (like) => like.post, {
+    onDelete: 'CASCADE',
+  })
   likes: Like[];
 
-  @OneToMany(() => Bookmark, (bookmark) => bookmark.post)
+  @OneToMany(() => Bookmark, (bookmark) => bookmark.post, {
+    onDelete: 'CASCADE',
+  })
   bookmarks: Bookmark[];
 
-  @OneToMany(() => Reply, (reply) => reply.post)
+  @OneToMany(() => Reply, (reply) => reply.post, {
+    onDelete: 'CASCADE',
+  })
   replies: Reply[];
 
-  @OneToMany(() => Repost, (repost) => repost.originalPost)
+  @OneToMany(() => Repost, (repost) => repost.originalPost, {
+    onDelete: 'CASCADE',
+  })
   reposts: Repost[];
 
   @OneToMany(() => Media, (media) => media.post)
   media: Media[];
 
-  @OneToMany(() => PostHashtag, (postHashtag) => postHashtag.post)
+  @OneToMany(() => PostHashtag, (postHashtag) => postHashtag.post, {
+    onDelete: 'CASCADE',
+  })
   postHashtags: PostHashtag[];
 
-  @OneToMany(() => Mention, (mention) => mention.post)
+  @OneToMany(() => Mention, (mention) => mention.post, {
+    onDelete: 'CASCADE',
+  })
   mentions: Mention[];
 
   @ManyToOne(() => User, (user) => user.posts, { onDelete: 'CASCADE' })

@@ -12,6 +12,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiQuery,
+  ApiBearerAuth,
+  ApiExcludeEndpoint,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
 import { MailService } from '../../common/mailer/mail.service';
@@ -24,6 +33,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
+@ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -32,9 +42,27 @@ export class AuthController {
   ) {}
 
   /**
-   * TODO ======================= SIGNUP =========================
-   * //* Create a new user and return access + refresh tokens
+   ** Sign up a new user
    */
+  @ApiOperation({
+    summary: 'Register a new user',
+    description:
+      'Creates a new user account, sends verification email, and returns authentication tokens',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully registered',
+    headers: {
+      'Set-Cookie': {
+        description:
+          'Sets HttpOnly cookies with access_token and refresh_token',
+        schema: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 409, description: 'Email or username already exists' })
+  @ApiBody({ type: CreateUserDto })
   @Post('signup')
   async signup(
     @Body() dto: CreateUserDto,
@@ -70,9 +98,33 @@ export class AuthController {
   }
 
   /**
-   * TODO ======================= LOGIN ==========================
-   * //* Verify credentials and return access + refresh tokens
+   ** Login user
    */
+  @ApiOperation({
+    summary: 'User login',
+    description: 'Authenticate user with email/username and password',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    headers: {
+      'Set-Cookie': {
+        description:
+          'Sets HttpOnly cookies with access_token (15min) and refresh_token (7days)',
+        schema: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid credentials or request format',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid credentials',
+  })
+  @ApiResponse({ status: 429, description: 'Too many login attempts' })
+  @ApiBody({ type: LoginDto })
   @Throttle({ default: { ttl: 6000, limit: 3 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
@@ -115,9 +167,33 @@ export class AuthController {
   }
 
   /**
-   * TODO ======================= REFRESH TOKEN ==================
-   * //* Rotate refresh token and issue new access token
-   */ //* Sends new access token and sets a new refresh cookie
+   ** Refresh authentication tokens
+   */
+  @ApiOperation({
+    summary: 'Refresh authentication tokens',
+    description: 'Uses refresh token to get new access and refresh tokens',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tokens refreshed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Token rotated' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No refresh token provided or invalid token',
+  })
+  @ApiResponse({ status: 403, description: 'Refresh token invalid or expired' })
+  @ApiQuery({
+    name: 'refresh_token',
+    required: false,
+    description: 'Refresh token (can also be sent in cookies)',
+  })
   @HttpCode(HttpStatus.OK)
   @Get('refresh')
   async refresh(
@@ -185,9 +261,23 @@ export class AuthController {
   }
 
   /**
-   * TODO ======================= LOGOUT A SINGLE DEVICE =========================
-   * //* Revoke refresh token(s) and clear cookie
+   ** Logout current device
    */
+  @ApiOperation({
+    summary: 'Logout from current device',
+    description: 'Revokes refresh token for current session and clears cookies',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Logout successful',
+    headers: {
+      'Set-Cookie': {
+        description: 'Clears authentication cookies',
+        schema: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'No valid session found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Get('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
@@ -202,11 +292,29 @@ export class AuthController {
       return { success: true };
     }
   }
+
   /**
-   *  TODO ======================= LOGOUT ALL LOGGED IN DEVICES =========================
-   * @param req
-   * @param res
+   * Logout from all devices
    */
+  @ApiOperation({
+    summary: 'Logout from all devices',
+    description: 'Revokes all refresh tokens for the user across all devices',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Logged out from all devices successfully',
+    headers: {
+      'Set-Cookie': {
+        description: 'Clears authentication cookies',
+        schema: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Valid access token required',
+  })
+  @ApiBearerAuth('access_token')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
   @Post('logout-all')
@@ -225,10 +333,29 @@ export class AuthController {
       throw error;
     }
   }
+
   /**
-   * TODO ================= REQUEST PASSWORD RESET =================
-   * //* Generates a reset token and sends email
+   ** Request password reset
    */
+  @ApiOperation({
+    summary: 'Request password reset',
+    description:
+      'Sends password reset email to the provided email address if it exists',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'If email exists, reset link has been sent',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'If that email exists, a reset link has been sent.',
+        },
+      },
+    },
+  })
+  @ApiBody({ type: RequestPasswordResetDto })
   @Post('request-password-reset')
   async requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
     //! Always respond with generic message to prevent email enumeration
@@ -237,9 +364,33 @@ export class AuthController {
   }
 
   /**
-   * TODO ===================== RESET PASSWORD ====================
-   * //* Verify token, update password, revoke old tokens
+   ** Reset password
    */
+  @ApiOperation({
+    summary: 'Reset password with token',
+    description: 'Reset user password using token from email',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset successful',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Password has been reset successfully.',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid or missing token' })
+  @ApiResponse({ status: 403, description: 'Invalid or expired token' })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiQuery({
+    name: 'token',
+    required: false,
+    description: 'Password reset token (can also be sent in body)',
+  })
   @Post('reset-password')
   async resetPassword(
     @Body() dto: ResetPasswordDto,
@@ -257,9 +408,31 @@ export class AuthController {
   }
 
   /**
-   * TODO ===================== VERIFY EMAIL ======================
-   * //* Verify the email token and mark user as verified
+   ** Verify email
    */
+  @ApiOperation({
+    summary: 'Verify email address',
+    description: 'Verify email using token sent to email',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Email verified successfully.',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid or expired token' })
+  @ApiQuery({
+    name: 'token',
+    required: true,
+    description: 'Email verification token from email',
+  })
   @Get('verify-email')
   async verifyEmail(@Req() req: Request, @Query('token') token: string) {
     const ip = req.ip;
@@ -268,14 +441,16 @@ export class AuthController {
     return { message: 'Email verified successfully.' };
   }
 }
+
 /**
- * TODO ===================== TEST THE  EMAIL ======================
- * //* Verify the email token and mark user as verified
+ ** Email test controller (for development only)
  */
+@ApiTags('Testing')
 @Controller('email')
 export class MailTestController {
   constructor(private readonly mailer: MailService) {}
 
+  @ApiExcludeEndpoint() // Hide this endpoint in production
   @Get('test')
   async sendTest(@Query('to') to: string) {
     await this.mailer.sendVerificationEmail(to, 'lksdflksdajflksda', 'Peter');

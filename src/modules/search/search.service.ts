@@ -285,10 +285,7 @@ export class SearchService {
   }
 
   //TODO ==================== GET TRENDING SEARCHES ====================
-  async getTrendingSearches(
-    timeframe: 'day' | 'week' = 'day',
-    limit: number = 10,
-  ): Promise<string[]> {
+  async getTrendingSearches(limit: number = 10): Promise<string[]> {
     try {
       //* Placeholder - implement with search analytics later
       //* For now, return popular hashtags as trending searches

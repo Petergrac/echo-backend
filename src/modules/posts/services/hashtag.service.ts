@@ -199,6 +199,7 @@ export class HashtagService {
           hasBookmarked: false,
           hasReposted: false,
           hasReplied: false,
+          isFollowingAuthor: false,
         };
 
         return {
