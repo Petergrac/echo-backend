@@ -148,6 +148,23 @@ export class AuthService {
       await this.audiService.createLog(log);
       throw new UnauthorizedException('Invalid credentials');
     }
+    if (user.isBanned) {
+      await this.audiService.createLog({
+        action: AuditAction.BANNED_LOGIN_ATTEMPT,
+        resource: AuditResource.AUTH,
+        ip,
+        userAgent,
+        userId: user.id,
+        metadata: {
+          bannedAt: user.bannedAt,
+          banReason: user.banReason,
+        },
+      });
+
+      throw new ForbiddenException(
+        user.banReason ?? 'Your account has been banned',
+      );
+    }
     //* 2. Create access token and refresh token
     const accessToken = await this.tokenService.createAccessToken(
       user.id,

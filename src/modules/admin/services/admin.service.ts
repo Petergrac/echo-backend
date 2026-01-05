@@ -394,7 +394,6 @@ export class AdminService {
           banReason: reason,
         },
       );
-
       await queryRunner.commitTransaction();
 
       //* Log the action

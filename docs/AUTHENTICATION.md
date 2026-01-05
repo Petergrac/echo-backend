@@ -89,8 +89,12 @@ Body: { email OR username, password }
   ↓
 [Audit Log] - Record login attempt
   ↓
-Response: null,
-Set-Cookie: refresh_token=...,access_token=....,
+↓
+Server sets HttpOnly cookies:
+  - access_token (15m)
+  - refresh_token (7d)
+↓
+Response body: user profile only (or empty)
 ```
 
 ### 3. Token Refresh
@@ -303,14 +307,12 @@ async banUser() {}
 
 ### Guards Hierarchy
 
-```
-1. JwtAuthGuard - Verify JWT token is valid
-   ↓
-2. RolesGuard - Check user role matches required role
-   ↓
-3. AdminGuard - Verify user is admin
-   ↓
-4. Route Handler - Execute if all guards pass
+```bash
+JwtAuthGuard:
+- Extracts access_token from HttpOnly cookies
+- Verifies signature and expiry
+- Attaches payload to request.user
+
 ```
 
 ---
@@ -376,24 +378,9 @@ Status: 403 Forbidden
 
 ## 📝 Implementing Authentication in Frontend
 
-### 1. Store Access Token
+fetch('/api/users/me', { credentials:'include' });
 
-```javascript
-// After login
-localStorage.setItem('accessToken', response.accessToken);
-```
-
-### 2. Send with Requests
-
-```javascript
-// Add to every authenticated request
-const headers = {
-  Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-  'Content-Type': 'application/json',
-};
-
-fetch('/api/users/me', { headers });
-```
+````
 
 ### 3. Handle Token Refresh
 
@@ -410,14 +397,11 @@ if (response.status === 401) {
   localStorage.setItem('accessToken', newToken.accessToken);
   // Retry request...
 }
-```
+````
 
 ### 4. Logout
 
 ```javascript
-// Clear storage
-localStorage.removeItem('accessToken');
-
 // Call logout endpoint
 await fetch('/api/auth/logout', {
   method: 'GET',

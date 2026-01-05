@@ -104,11 +104,13 @@ export class TokenService {
         user: {
           id: true,
           role: true,
+          isBanned: true,
         },
       },
       relations: ['user'],
     });
     if (!candidate) throw new ForbiddenException('Invalid refresh token');
+    if (candidate.user.isBanned) throw new ForbiddenException('User is banned');
     // * 2. Verify the user refresh token id with that in the database
     const ok = await argon2
       .verify(candidate.hashedToken, plain)
@@ -132,7 +134,6 @@ export class TokenService {
     }
     //! Someone is trying to reuse a revoked token
     if (candidate.revoked) {
-      console.log('Token revoked');
       //* Revoke all and report of suspicious activity
       await this.refreshTokenRepo.update(
         { user: { id: candidate.user.id }, revoked: false },
