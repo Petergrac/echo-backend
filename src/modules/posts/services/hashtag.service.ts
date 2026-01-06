@@ -237,7 +237,9 @@ export class HashtagService {
         .limit(limit)
         .getMany();
 
-      return hashtags;
+      return plainToInstance(TagResponseDto, hashtags, {
+        excludeExtraneousValues: true,
+      });
     } catch (error) {
       this.logger.error(`Error searching hashtags: ${error.message}`);
       throw error;

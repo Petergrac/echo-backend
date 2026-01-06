@@ -3,7 +3,6 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
@@ -14,7 +13,6 @@ import { PostResponseDto } from '../dto/post-response.dto';
 import { ApiPaginatedResponse } from '../../../common/decorators/api-paginated-response.decorator';
 
 @ApiTags('Hashtags')
-@ApiBearerAuth('access_token')
 @Controller('hashtags')
 @UseGuards(JwtAuthGuard)
 export class HashtagController {
@@ -62,7 +60,7 @@ export class HashtagController {
   @Get('trending')
   async getTrendingHashtags(
     @Query('limit') limit: number = 10,
-    @Query('timeframe') timeframe: 'day' | 'week' | 'month' = 'week',
+    @Query('timeframe') timeframe: 'day' | 'week' | 'month' = 'month',
   ) {
     return this.hashtagService.getTrendingHashtags(limit, timeframe);
   }

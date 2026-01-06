@@ -240,13 +240,12 @@ export class SearchService {
   ): Promise<{
     users: User[];
     hashtags: Hashtag[];
-    popularQueries: string[];
   }> {
     try {
       const normalizedQuery = query.trim().toLowerCase();
 
       if (!normalizedQuery || normalizedQuery.length < 2) {
-        return { users: [], hashtags: [], popularQueries: [] };
+        return { users: [], hashtags: [] };
       }
 
       const [users, hashtags] = await Promise.all([
@@ -264,10 +263,6 @@ export class SearchService {
           .take(limit)
           .getMany(),
       ]);
-
-      //* 2.Popular queries (you can implement this with a search history table later)
-      const popularQueries = this.getPopularSearchQueries(normalizedQuery);
-
       let enrichedUsers = users;
       if (userId) {
         enrichedUsers = await this.enrichUsersWithFollowStatus(users, userId);
@@ -276,7 +271,6 @@ export class SearchService {
       return {
         users: enrichedUsers,
         hashtags,
-        popularQueries,
       };
     } catch (error) {
       this.logger.error(`Error getting search suggestions: ${error.message}`);
@@ -467,15 +461,5 @@ export class SearchService {
       return new Date(0);
 
     return d;
-  }
-
-  private getPopularSearchQueries(query: string): string[] {
-    //* Placeholder - implement with search history analytics later
-    return [
-      `#${query}`,
-      `@${query}`,
-      `${query} tips`,
-      `${query} tutorial`,
-    ].slice(0, 5);
   }
 }

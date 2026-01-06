@@ -31,8 +31,12 @@ export class TokenService {
    *TODO ======================= CREATE ACCESS TOKEN METHOD =================
    *
    */
-  createAccessToken(userId: string, role: string): Promise<string> {
-    const payload = { sub: userId, role: role };
+  createAccessToken(
+    userId: string,
+    role: string,
+    isBanned: boolean,
+  ): Promise<string> {
+    const payload = { sub: userId, role: role, isBanned: isBanned };
     return this.jwt.signAsync(payload, { expiresIn: '15m' });
   }
 
@@ -174,6 +178,7 @@ export class TokenService {
     return {
       token: newCompound.token,
       role,
+      isBanned: candidate.user.isBanned,
       expiresAt: newCompound.expiresAt,
       userId: candidate.user.id,
     };

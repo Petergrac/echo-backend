@@ -3252,11 +3252,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get trending hashtags",
         "tags": [
           "Hashtags"
@@ -3359,11 +3354,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Search hashtags",
         "tags": [
           "Hashtags"
@@ -3472,11 +3462,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get posts by hashtag",
         "tags": [
           "Hashtags"
@@ -3600,11 +3585,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get user mentions",
         "tags": [
           "Mentions"
@@ -3675,11 +3655,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get unread mention count",
         "tags": [
           "Mentions"

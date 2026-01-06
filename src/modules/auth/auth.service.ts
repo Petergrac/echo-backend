@@ -73,6 +73,7 @@ export class AuthService {
     const accessToken = await this.tokenService.createAccessToken(
       user.id,
       user.role,
+      user.isBanned,
     );
 
     //* 5. Generate refresh token (hashed in DB)
@@ -169,6 +170,7 @@ export class AuthService {
     const accessToken = await this.tokenService.createAccessToken(
       user.id,
       user.role,
+      user.isBanned,
     );
     const { token: refreshToken, expiresAt } =
       await this.tokenService.createRefreshToken(user.id, ip, userAgent);

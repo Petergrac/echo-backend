@@ -1,17 +1,10 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { MentionService } from '../services/mention.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { Request } from 'express';
 
 @ApiTags('Mentions')
-@ApiBearerAuth('access_token')
 @Controller('mentions')
 @UseGuards(JwtAuthGuard)
 export class MentionController {
