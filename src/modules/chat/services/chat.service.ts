@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import {
   Conversation,
   ConversationType,
@@ -30,6 +30,7 @@ export class ChatService {
     private readonly participantRepo: Repository<ConversationParticipant>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly dataSource: DataSource,
   ) {}
 
   //TODO ==================== CREATE CONVERSATION ====================
@@ -37,9 +38,7 @@ export class ChatService {
     creatorId: string,
     createDto: CreateConversationDto,
   ) {
-    const queryRunner =
-      this.conversationRepo.manager.connection.createQueryRunner();
-    await queryRunner.connect();
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.startTransaction();
 
     try {
@@ -203,8 +202,7 @@ export class ChatService {
     userId: string,
     updateDto: UpdateConversationDto,
   ): Promise<Conversation | null> {
-    const queryRunner =
-      this.conversationRepo.manager.connection.createQueryRunner();
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
@@ -249,8 +247,7 @@ export class ChatService {
     userId: string,
     addDto: AddParticipantsDto,
   ): Promise<Conversation | null> {
-    const queryRunner =
-      this.conversationRepo.manager.connection.createQueryRunner();
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
@@ -333,8 +330,7 @@ export class ChatService {
     conversationId: string,
     userId: string,
   ): Promise<void> {
-    const queryRunner =
-      this.conversationRepo.manager.connection.createQueryRunner();
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 

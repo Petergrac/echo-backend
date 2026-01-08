@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -6,6 +8,7 @@ import {
   OnGatewayDisconnect,
   MessageBody,
   ConnectedSocket,
+  WsException,
 } from '@nestjs/websockets';
 import { Logger, UsePipes, ValidationPipe } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
@@ -17,6 +20,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../../auth/entities/user.entity';
 import { Repository } from 'typeorm';
 import { JoinConversationDto } from '../dto/join-conversation.dto';
+import { ConfigService } from '@nestjs/config';
 
 interface AuthenticatedSocket extends Socket {
   user: { userId: string; username: string };
@@ -49,6 +53,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwtService: JwtService,
     private readonly chatService: ChatService,
     private readonly messagesService: MessagesService,
+    private readonly configService: ConfigService,
 
     //*Repositories
     @InjectRepository(User)
@@ -59,19 +64,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(socket: AuthenticatedSocket) {
     try {
       //* 1.Authenticate socket connection using JWT
-      const token = (socket.handshake.auth.token ||
-        socket.handshake.headers.authorization) as string;
-      if (!token) {
-        socket.disconnect();
-        return;
-      }
-
-      const payload: { sub: string } = await this.jwtService.verify(
-        token.replace('Bearer ', ''),
-        {
-          secret: process.env.JWT_SECRET,
-        },
-      );
+      const token = this.extractTokenFromHeader(socket);
+      if (!token) throw new WsException('Unauthorized');
+      const payload = this.jwtService.verify(token, {
+        secret: this.configService.getOrThrow('JWT_SECRET'),
+      });
       //* 2.Fetch the user from the database
       const user = await this.userRepo.findOne({
         where: {
@@ -121,7 +118,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: JoinConversationDto,
   ) {
     try {
-      console.log(Object.keys(data));
       //* 1.Verify user is participant of conversation
       await this.chatService.getConversation(
         data.conversationId,
@@ -252,7 +248,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       );
 
       //* 1.Get message to find conversation ID
-      const message = await this.messagesService['getMessageWithRelations'](
+      const message = await this.messagesService.getMessageWithRelations(
         data.messageId,
       );
 
@@ -350,14 +346,36 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   //* Get online status of users
-  getOnlineUsers(): string[] {
+  private getOnlineUsers(): string[] {
     return Array.from(this.userSockets.keys());
   }
 
   //* Check if user is online
-  isUserOnline(userId: string): boolean {
+  private isUserOnline(userId: string): boolean {
     return (
       this.userSockets.has(userId) && this.userSockets.get(userId)!.size > 0
     );
+  }
+  private extractTokenFromHeader(client: Socket): string | undefined {
+    //* 1.Try cookies
+    const cookies = client.handshake.headers.cookie;
+    if (cookies) {
+      const tokenCookie = cookies
+        .split(';')
+        .find((c) => c.trim().startsWith('access_token='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+    }
+    //* 2. Try socket.io auth payload
+    const authToken = client.handshake.auth?.token as string;
+    if (authToken) {
+      return authToken;
+    }
+
+    //* 3. Try Authorization header
+    const header = client.handshake.headers?.authorization;
+    if (header) {
+      return header;
+    }
+    return undefined;
   }
 }

@@ -7,7 +7,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import {
   Message,
   MessageType,
@@ -51,6 +51,7 @@ export class MessagesService {
     @InjectRepository(ConversationParticipant)
     private readonly participantRepo: Repository<ConversationParticipant>,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly dataSource: DataSource,
   ) {}
 
   //TODO ==================== SEND MESSAGE ====================
@@ -60,7 +61,7 @@ export class MessagesService {
     sendDto: SendMessageDto,
     file?: Express.Multer.File,
   ): Promise<MessageResponseDto | null> {
-    const queryRunner = this.messageRepo.manager.connection.createQueryRunner();
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
@@ -151,12 +152,10 @@ export class MessagesService {
       await queryRunner.manager
         .createQueryBuilder()
         .update(ConversationParticipant)
-        .set({
-          unreadCount: () => 'unreadCount + 1',
-        })
+        .set({ unreadCount: () => 'unreadCount + 1' })
         .where('conversationId = :conversationId', { conversationId })
         .andWhere('userId != :senderId', { senderId })
-        .andWhere('isActive = :isActive', { isActive: true })
+        .andWhere('isActive = true')
         .execute();
 
       await queryRunner.commitTransaction();
@@ -164,13 +163,11 @@ export class MessagesService {
       this.logger.log(
         `Message sent in conversation ${conversationId} by user ${senderId}`,
       );
-      return plainToInstance(
-        MessageResponseDto,
-        this.getMessageWithRelations(savedMessage.id),
-        {
-          excludeExtraneousValues: true,
-        },
-      );
+      const fullMessage = await this.getMessageWithRelations(savedMessage.id);
+
+      return plainToInstance(MessageResponseDto, fullMessage, {
+        excludeExtraneousValues: true,
+      });
     } catch (error) {
       await queryRunner.rollbackTransaction();
       this.logger.error(`Error sending message: ${error.message}`);
@@ -230,11 +227,7 @@ export class MessagesService {
         .getManyAndCount();
 
       //* 4. Mark messages as read for this user
-      await this.markMessagesAsRead(
-        conversationId,
-        userId,
-        messages.map((m) => m.id),
-      );
+      await this.markConversationAsRead(conversationId, userId);
 
       return {
         messages: plainToInstance(MessageResponseDto, messages.reverse(), {
@@ -262,7 +255,7 @@ export class MessagesService {
     userId: string,
     messageIds: string[],
   ): Promise<void> {
-    const queryRunner = this.messageRepo.manager.connection.createQueryRunner();
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
@@ -346,7 +339,7 @@ export class MessagesService {
     userId: string,
     forEveryone: boolean = false,
   ): Promise<void> {
-    const queryRunner = this.messageRepo.manager.connection.createQueryRunner();
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
@@ -402,13 +395,36 @@ export class MessagesService {
     }
   }
 
+  //TODO ========================= MARK CONVERSATION AS READ ===============
+
+  async markConversationAsRead(
+    conversationId: string,
+    userId: string,
+  ): Promise<void> {
+    await this.participantRepo.update(
+      {
+        conversation: { id: conversationId },
+        user: { id: userId },
+        isActive: true,
+      },
+      {
+        unreadCount: 0,
+        lastReadAt: new Date(),
+      },
+    );
+
+    this.logger.log(
+      `Conversation ${conversationId} marked as read by user ${userId}`,
+    );
+  }
+
   //TODO ==================== ADD REACTION ====================
   async addReaction(
     messageId: string,
     userId: string,
     emoji: string,
   ): Promise<ReactionResponseDto | null> {
-    const queryRunner = this.messageRepo.manager.connection.createQueryRunner();
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
@@ -484,7 +500,7 @@ export class MessagesService {
     userId: string,
     newContent: string,
   ): Promise<Message | null> {
-    const queryRunner = this.messageRepo.manager.connection.createQueryRunner();
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
@@ -593,9 +609,7 @@ export class MessagesService {
 
   //? ==================== PRIVATE METHODS ====================
 
-  private async getMessageWithRelations(
-    messageId: string,
-  ): Promise<Message | null> {
+  async getMessageWithRelations(messageId: string): Promise<Message | null> {
     return this.messageRepo.findOne({
       where: { id: messageId },
       relations: [
