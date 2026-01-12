@@ -17,7 +17,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBody,
-  ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -31,7 +30,6 @@ import { plainToInstance } from 'class-transformer';
 import { NotificationPreferencesResponseDto } from '../dto/response-preferences.dto';
 
 @ApiTags('Notifications')
-@ApiBearerAuth('access_token')
 @Controller('notifications/preferences')
 @UseGuards(JwtAuthGuard)
 export class NotificationPreferencesController {

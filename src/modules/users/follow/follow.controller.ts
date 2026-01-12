@@ -13,7 +13,6 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
@@ -25,7 +24,6 @@ import { ApiPaginatedResponse } from '../../../common/decorators/api-paginated-r
 import { UserResponseDto } from '../../auth/dto/user-response.dto';
 
 @ApiTags('Follow')
-@ApiBearerAuth('access_token')
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class FollowController {

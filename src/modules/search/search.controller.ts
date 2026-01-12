@@ -3,7 +3,6 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
   ApiQuery,
   getSchemaPath,
 } from '@nestjs/swagger';
@@ -15,7 +14,6 @@ import { PostResponseDto } from '../posts/dto/post-response.dto';
 import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 
 @ApiTags('Search')
-@ApiBearerAuth('access_token')
 @Controller('search')
 @UseGuards(JwtAuthGuard)
 export class SearchController {

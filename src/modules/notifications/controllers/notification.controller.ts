@@ -16,7 +16,6 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
@@ -26,7 +25,6 @@ import { NotificationResponseDto } from '../dto/response-notification.dto';
 import { ApiPaginatedResponse } from '../../../common/decorators/api-paginated-response.decorator';
 
 @ApiTags('Notifications')
-@ApiBearerAuth('access_token')
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {

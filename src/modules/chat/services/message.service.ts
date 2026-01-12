@@ -198,7 +198,6 @@ export class MessagesService {
       if (!participant) {
         throw new ForbiddenException('Not a participant of this conversation');
       }
-
       //* 2. Build query with pagination
       const queryBuilder = this.messageRepo
         .createQueryBuilder('message')
@@ -228,7 +227,6 @@ export class MessagesService {
 
       //* 4. Mark messages as read for this user
       await this.markConversationAsRead(conversationId, userId);
-
       return {
         messages: plainToInstance(MessageResponseDto, messages.reverse(), {
           excludeExtraneousValues: true,

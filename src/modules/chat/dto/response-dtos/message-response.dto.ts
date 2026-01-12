@@ -64,9 +64,9 @@ export class MessageResponseDto {
   sender: UserDto;
 
   @Expose()
-  @Type(() => UserDto)
+  @Type(() => MessageResponseDto)
   @IsOptional()
-  replyTo?: UserDto;
+  replyTo: MessageResponseDto;
 
   @Expose()
   @IsOptional()

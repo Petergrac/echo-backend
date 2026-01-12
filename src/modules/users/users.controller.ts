@@ -17,7 +17,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBody,
-  ApiBearerAuth,
   ApiParam,
   ApiConsumes,
 } from '@nestjs/swagger';
@@ -31,7 +30,6 @@ import { Throttle } from '@nestjs/throttler';
 import { UserResponseDto } from '../auth/dto/user-response.dto';
 
 @ApiTags('Users')
-@ApiBearerAuth('access_token')
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {

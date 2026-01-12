@@ -20,7 +20,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBody,
-  ApiBearerAuth,
   ApiParam,
   ApiQuery,
   ApiConsumes,
@@ -38,7 +37,6 @@ import { PostResponseDto } from '../dto/post-response.dto';
 import { ApiPaginatedResponse } from '../../../common/decorators/api-paginated-response.decorator';
 
 @ApiTags('Posts')
-@ApiBearerAuth('access_token')
 @Controller('posts')
 @UseGuards(JwtAuthGuard)
 export class PostsController {

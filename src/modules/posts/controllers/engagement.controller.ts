@@ -20,7 +20,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBody,
-  ApiBearerAuth,
   ApiParam,
   ApiQuery,
   ApiConsumes,
@@ -38,7 +37,6 @@ import { UserResponseDto } from '../../auth/dto/user-response.dto';
 import { ApiPaginatedResponse } from '../../../common/decorators/api-paginated-response.decorator';
 
 @ApiTags('Engagement')
-@ApiBearerAuth('access_token')
 @Controller('engagement')
 @UseGuards(JwtAuthGuard)
 export class EngagementController {

@@ -978,11 +978,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Create a new post",
         "tags": [
           "Posts"
@@ -1057,11 +1052,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get post by ID",
         "tags": [
           "Posts"
@@ -1171,11 +1161,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Update a post",
         "tags": [
           "Posts"
@@ -1254,11 +1239,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Delete a post",
         "tags": [
           "Posts"
@@ -1367,11 +1347,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get user posts",
         "tags": [
           "Posts"
@@ -1473,11 +1448,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get algorithmic feed (For You)",
         "tags": [
           "Posts"
@@ -1592,11 +1562,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get trending feed",
         "tags": [
           "Posts"
@@ -1698,11 +1663,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get discover feed",
         "tags": [
           "Posts"
@@ -1804,11 +1764,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get following feed",
         "tags": [
           "Posts"
@@ -1893,11 +1848,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Like or unlike a post",
         "tags": [
           "Engagement"
@@ -2006,11 +1956,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get users who liked a post",
         "tags": [
           "Engagement"
@@ -2109,11 +2054,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get posts liked by authenticated user",
         "tags": [
           "Engagement"
@@ -2194,11 +2134,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Bookmark or unbookmark a post",
         "tags": [
           "Engagement"
@@ -2297,11 +2232,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get bookmarked posts",
         "tags": [
           "Engagement"
@@ -2404,11 +2334,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Create a reply to a post",
         "tags": [
           "Engagement"
@@ -2521,11 +2446,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Update a reply",
         "tags": [
           "Engagement"
@@ -2634,11 +2554,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get post replies",
         "tags": [
           "Engagement"
@@ -2747,11 +2662,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get child replies",
         "tags": [
           "Engagement"
@@ -2832,11 +2742,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Delete a reply",
         "tags": [
           "Engagement"
@@ -2921,11 +2826,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Repost a post",
         "tags": [
           "Engagement"
@@ -3034,11 +2934,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get post reposts",
         "tags": [
           "Engagement"
@@ -3137,11 +3032,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get user reposts",
         "tags": [
           "Engagement"
@@ -3753,11 +3643,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get user notifications",
         "tags": [
           "Notifications"
@@ -3828,11 +3713,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get unread notification count",
         "tags": [
           "Notifications"
@@ -3907,11 +3787,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Mark notification as read",
         "tags": [
           "Notifications"
@@ -3982,11 +3857,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Mark all notifications as read",
         "tags": [
           "Notifications"
@@ -4067,11 +3937,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Delete a notification",
         "tags": [
           "Notifications"
@@ -4141,11 +4006,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Delete all notifications",
         "tags": [
           "Notifications"
@@ -4209,11 +4069,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get user notification preferences",
         "tags": [
           "Notifications"
@@ -4285,11 +4140,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Update notification preferences",
         "tags": [
           "Notifications"
@@ -4363,11 +4213,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Mute or unmute notifications from a user",
         "tags": [
           "Notifications"
@@ -4441,11 +4286,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Mute or unmute notifications containing keywords",
         "tags": [
           "Notifications"
@@ -4509,11 +4349,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Reset notification preferences to defaults",
         "tags": [
           "Notifications"
@@ -4606,11 +4441,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Check if a notification type is allowed",
         "tags": [
           "Notifications"
@@ -4674,11 +4504,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get current user profile",
         "tags": [
           "Users"
@@ -4797,11 +4622,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Update user profile",
         "tags": [
           "Users"
@@ -4856,11 +4676,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Delete user account",
         "tags": [
           "Users"
@@ -4938,11 +4753,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get user profile by username",
         "tags": [
           "Users"
@@ -5043,11 +4853,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Follow or unfollow a user",
         "tags": [
           "Follow"
@@ -5159,11 +4964,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get user followers",
         "tags": [
           "Follow"
@@ -5275,11 +5075,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get user following",
         "tags": [
           "Follow"
@@ -5288,7 +5083,6 @@
     },
     "/chat/conversations": {
       "post": {
-        "description": "Create a direct or group conversation. For direct messages, if conversation already exists, returns existing conversation.",
         "operationId": "ChatController_createConversation",
         "parameters": [],
         "requestBody": {
@@ -5303,112 +5097,11 @@
         },
         "responses": {
           "201": {
-            "description": "Conversation created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid input or direct conversation must have exactly 2 participants"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Creator or participants not found"
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "statusCode": {
-                      "type": "number",
-                      "example": 500
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Internal server error"
-                    },
-                    "timestamp": {
-                      "type": "string",
-                      "example": "2024-01-01T00:00:00.000Z"
-                    },
-                    "path": {
-                      "type": "string",
-                      "example": "/auth/login"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Create a new conversation",
-        "tags": [
-          "Chat"
-        ]
-      },
-      "get": {
-        "description": "Retrieve paginated list of conversations for the authenticated user, ordered by last message timestamp.",
-        "operationId": "ChatController_getUserConversations",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number (default: 1)",
-            "schema": {
-              "example": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Items per page (default: 50, max: 100)",
-            "schema": {
-              "example": 50,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/PaginatedResponseDto"
-                    },
-                    {
-                      "properties": {
-                        "items": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/ConversationResponseDto"
-                          }
-                        }
-                      }
-                    }
-                  ]
+                  "type": "object"
                 }
               }
             }
@@ -5417,7 +5110,7 @@
             "description": "Bad Request"
           },
           "401": {
-            "description": "Unauthorized - Authentication required"
+            "description": "Unauthorized"
           },
           "403": {
             "description": "Forbidden"
@@ -5454,43 +5147,33 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Get user conversations",
         "tags": [
           "Chat"
         ]
-      }
-    },
-    "/chat/conversations/{id}": {
+      },
       "get": {
-        "description": "Retrieve details of a specific conversation including participants.",
-        "operationId": "ChatController_getConversation",
+        "operationId": "ChatController_getUserConversations",
         "parameters": [
           {
-            "name": "id",
+            "name": "page",
             "required": true,
-            "in": "path",
-            "description": "Conversation UUID",
+            "in": "query",
             "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Conversation retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationResponseDto"
-                }
-              }
-            }
+            "description": ""
           },
           "400": {
             "description": "Bad Request"
@@ -5502,7 +5185,7 @@
             "description": "Forbidden"
           },
           "404": {
-            "description": "Conversation not found or access denied"
+            "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error",
@@ -5533,27 +5216,88 @@
             }
           }
         },
-        "security": [
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/conversations/{id}": {
+      "get": {
+        "operationId": "ChatController_getConversation",
+        "parameters": [
           {
-            "access_token": []
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
-        "summary": "Get conversation details",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "example": "2024-01-01T00:00:00.000Z"
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/auth/login"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "tags": [
           "Chat"
         ]
       },
       "patch": {
-        "description": "Update conversation name, avatar, or notification settings. User must be a participant.",
         "operationId": "ChatController_updateConversation",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Conversation UUID",
             "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
               "type": "string"
             }
           }
@@ -5570,195 +5314,11 @@
         },
         "responses": {
           "200": {
-            "description": "Conversation updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "User is not a participant of this conversation"
-          },
-          "404": {
-            "description": "Conversation not found"
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "statusCode": {
-                      "type": "number",
-                      "example": 500
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Internal server error"
-                    },
-                    "timestamp": {
-                      "type": "string",
-                      "example": "2024-01-01T00:00:00.000Z"
-                    },
-                    "path": {
-                      "type": "string",
-                      "example": "/auth/login"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Update conversation",
-        "tags": [
-          "Chat"
-        ]
-      }
-    },
-    "/chat/conversations/{id}/participants": {
-      "post": {
-        "description": "Add new participants to a group conversation. Only conversation admins can add participants.",
-        "operationId": "ChatController_addParticipants",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Conversation UUID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddParticipantsDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Participants added successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationResponseDto"
-                }
-              }
-            }
-          },
-          "201": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "All users are already participants"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Only admins can add participants"
-          },
-          "404": {
-            "description": "Conversation or users not found"
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "statusCode": {
-                      "type": "number",
-                      "example": 500
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Internal server error"
-                    },
-                    "timestamp": {
-                      "type": "string",
-                      "example": "2024-01-01T00:00:00.000Z"
-                    },
-                    "path": {
-                      "type": "string",
-                      "example": "/auth/login"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Add participants to conversation",
-        "tags": [
-          "Chat"
-        ]
-      }
-    },
-    "/chat/conversations/{id}/leave": {
-      "delete": {
-        "description": "Leave a conversation. User will no longer receive messages and will be marked as inactive participant.",
-        "operationId": "ChatController_leaveConversation",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Conversation UUID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Left conversation successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Left conversation successfully"
-                    }
-                  }
                 }
               }
             }
@@ -5771,253 +5331,6 @@
           },
           "403": {
             "description": "Forbidden"
-          },
-          "404": {
-            "description": "Not a participant of this conversation"
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "statusCode": {
-                      "type": "number",
-                      "example": 500
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Internal server error"
-                    },
-                    "timestamp": {
-                      "type": "string",
-                      "example": "2024-01-01T00:00:00.000Z"
-                    },
-                    "path": {
-                      "type": "string",
-                      "example": "/auth/login"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Leave conversation",
-        "tags": [
-          "Chat"
-        ]
-      }
-    },
-    "/chat/conversations/{id}/messages": {
-      "post": {
-        "description": "Send a text or media message to a conversation. Supports file upload for media messages.",
-        "operationId": "ChatController_sendMessage",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Conversation UUID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "content": {
-                    "type": "string",
-                    "description": "Message content (max 5000 chars)",
-                    "example": "Hello, how are you?"
-                  },
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "TEXT",
-                      "IMAGE",
-                      "VIDEO",
-                      "AUDIO",
-                      "FILE",
-                      "GIF"
-                    ],
-                    "description": "Message type",
-                    "example": "TEXT"
-                  },
-                  "replyToId": {
-                    "type": "string",
-                    "description": "Message ID to reply to",
-                    "example": "123e4567-e89b-12d3-a456-426614174001"
-                  },
-                  "media": {
-                    "type": "string",
-                    "description": "JSON string of media metadata"
-                  },
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "File to upload (image, video, audio, document)"
-                  }
-                },
-                "required": [
-                  "content"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Message sent successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid file or file too large"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Not a participant of this conversation"
-          },
-          "404": {
-            "description": "Conversation or reply message not found"
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "statusCode": {
-                      "type": "number",
-                      "example": 500
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Internal server error"
-                    },
-                    "timestamp": {
-                      "type": "string",
-                      "example": "2024-01-01T00:00:00.000Z"
-                    },
-                    "path": {
-                      "type": "string",
-                      "example": "/auth/login"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Send message",
-        "tags": [
-          "Chat"
-        ]
-      },
-      "get": {
-        "description": "Retrieve paginated messages from a conversation. Messages are automatically marked as read for the requesting user.",
-        "operationId": "ChatController_getMessages",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Conversation UUID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Page number (default: 1)",
-            "schema": {
-              "example": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Items per page (default: 50, max: 100)",
-            "schema": {
-              "example": 50,
-              "type": "number"
-            }
-          },
-          {
-            "name": "before",
-            "required": false,
-            "in": "query",
-            "description": "ISO date string to get messages before this date (cursor-based pagination)",
-            "schema": {
-              "example": "2024-01-01T00:00:00.000Z",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/PaginatedResponseDto"
-                    },
-                    {
-                      "properties": {
-                        "items": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/MessageResponseDto"
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Not a participant of this conversation"
           },
           "404": {
             "description": "Not Found"
@@ -6051,221 +5364,20 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Get conversation messages",
         "tags": [
           "Chat"
         ]
       }
     },
-    "/chat/messages/{id}": {
-      "patch": {
-        "description": "Edit message content. Only the sender can edit messages within 15 minutes of sending.",
-        "operationId": "ChatController_editMessage",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Message UUID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174001",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "content": {
-                    "type": "string",
-                    "description": "New message content",
-                    "example": "Updated message content"
-                  }
-                },
-                "required": [
-                  "content"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Message edited successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MessageResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Message is too old to edit"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "You can only edit your own messages"
-          },
-          "404": {
-            "description": "Message not found"
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "statusCode": {
-                      "type": "number",
-                      "example": 500
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Internal server error"
-                    },
-                    "timestamp": {
-                      "type": "string",
-                      "example": "2024-01-01T00:00:00.000Z"
-                    },
-                    "path": {
-                      "type": "string",
-                      "example": "/auth/login"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Edit message",
-        "tags": [
-          "Chat"
-        ]
-      },
-      "delete": {
-        "description": "Delete a message. Can delete for everyone (if sender) or just for yourself.",
-        "operationId": "ChatController_deleteMessage",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Message UUID",
-            "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174001",
-              "type": "string"
-            }
-          },
-          {
-            "name": "forEveryone",
-            "required": false,
-            "in": "query",
-            "description": "Delete for all participants (default: false)",
-            "schema": {
-              "example": false,
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Message deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Message deleted successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "You can only delete your own messages"
-          },
-          "404": {
-            "description": "Message not found"
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "statusCode": {
-                      "type": "number",
-                      "example": 500
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Internal server error"
-                    },
-                    "timestamp": {
-                      "type": "string",
-                      "example": "2024-01-01T00:00:00.000Z"
-                    },
-                    "path": {
-                      "type": "string",
-                      "example": "/auth/login"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Delete message",
-        "tags": [
-          "Chat"
-        ]
-      }
-    },
-    "/chat/messages/{id}/reactions": {
+    "/chat/conversations/{id}/participants": {
       "post": {
-        "description": "Add an emoji reaction to a message. If reaction already exists, it will be removed (toggle behavior).",
-        "operationId": "ChatController_addReaction",
+        "operationId": "ChatController_addParticipants",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Message UUID",
             "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174001",
               "type": "string"
             }
           }
@@ -6275,59 +5387,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "emoji": {
-                    "type": "string",
-                    "description": "Emoji character",
-                    "example": "👍"
-                  }
-                },
-                "required": [
-                  "emoji"
-                ]
+                "$ref": "#/components/schemas/AddParticipantsDto"
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Reaction added/removed successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "emoji": {
-                          "type": "string",
-                          "example": "👍"
-                        },
-                        "messageId": {
-                          "type": "string",
-                          "example": "123e4567-e89b-12d3-a456-426614174001"
-                        },
-                        "userId": {
-                          "type": "string",
-                          "example": "123e4567-e89b-12d3-a456-426614174002"
-                        },
-                        "reactedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "example": "2024-01-01T00:00:00.000Z"
-                        }
-                      }
-                    },
-                    {
-                      "type": "null",
-                      "description": "Reaction removed (returns null)"
-                    }
-                  ]
-                }
-              }
-            }
-          },
           "201": {
             "description": "",
             "content": {
@@ -6345,10 +5410,10 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Not a participant of this conversation"
+            "description": "Forbidden"
           },
           "404": {
-            "description": "Message not found"
+            "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error",
@@ -6379,86 +5444,181 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Add/remove reaction to message",
         "tags": [
           "Chat"
         ]
-      },
-      "get": {
-        "description": "Get all reactions for a specific message, grouped by emoji.",
-        "operationId": "ChatController_getMessageReactions",
+      }
+    },
+    "/chat/conversations/{id}/leave": {
+      "delete": {
+        "operationId": "ChatController_leaveConversation",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Message UUID",
             "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174001",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Reactions retrieved successfully",
+            "description": ""
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "reactions": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string"
-                            },
-                            "username": {
-                              "type": "string"
-                            },
-                            "avatar": {
-                              "type": "string",
-                              "nullable": true
-                            }
-                          }
-                        }
-                      },
-                      "example": {
-                        "👍": [
-                          {
-                            "id": "123e4567-e89b-12d3-a456-426614174002",
-                            "username": "john_doe",
-                            "avatar": "https://example.com/avatar.jpg"
-                          },
-                          {
-                            "id": "123e4567-e89b-12d3-a456-426614174003",
-                            "username": "jane_doe",
-                            "avatar": "https://example.com/avatar2.jpg"
-                          }
-                        ],
-                        "❤️": [
-                          {
-                            "id": "123e4567-e89b-12d3-a456-426614174004",
-                            "username": "bob_smith",
-                            "avatar": null
-                          }
-                        ]
-                      }
-                    },
-                    "totalReactions": {
+                    "statusCode": {
                       "type": "number",
-                      "example": 3
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "example": "2024-01-01T00:00:00.000Z"
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/auth/login"
                     }
                   }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/conversations/{id}/messages": {
+      "get": {
+        "operationId": "ChatController_getMessages",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "before",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "example": "2024-01-01T00:00:00.000Z"
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/auth/login"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/messages/{id}": {
+      "patch": {
+        "operationId": "ChatController_editMessage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -6470,10 +5630,10 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Not a participant of this conversation"
+            "description": "Forbidden"
           },
           "404": {
-            "description": "Message not found"
+            "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error",
@@ -6504,12 +5664,206 @@
             }
           }
         },
-        "security": [
+        "tags": [
+          "Chat"
+        ]
+      },
+      "delete": {
+        "operationId": "ChatController_deleteMessage",
+        "parameters": [
           {
-            "access_token": []
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "forEveryone",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
-        "summary": "Get message reactions",
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "example": "2024-01-01T00:00:00.000Z"
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/auth/login"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/messages/{id}/reactions": {
+      "post": {
+        "operationId": "ChatController_addReaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "example": "2024-01-01T00:00:00.000Z"
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/auth/login"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Chat"
+        ]
+      },
+      "get": {
+        "operationId": "ChatController_getMessageReactions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "example": "2024-01-01T00:00:00.000Z"
+                    },
+                    "path": {
+                      "type": "string",
+                      "example": "/auth/login"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "tags": [
           "Chat"
         ]
@@ -6517,62 +5871,20 @@
     },
     "/chat/conversations/{id}/read": {
       "post": {
-        "description": "Mark specific messages as read for the authenticated user. Updates unread count for the conversation.",
         "operationId": "ChatController_markAsRead",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Conversation UUID",
             "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
               "type": "string"
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "messageIds": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "description": "Array of message IDs to mark as read",
-                    "example": [
-                      "123e4567-e89b-12d3-a456-426614174001",
-                      "123e4567-e89b-12d3-a456-426614174002"
-                    ]
-                  }
-                },
-                "required": [
-                  "messageIds"
-                ]
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "Messages marked as read",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Messages marked as read"
-                    }
-                  }
-                }
-              }
-            }
+            "description": ""
           },
           "400": {
             "description": "Bad Request"
@@ -6581,10 +5893,10 @@
             "description": "Unauthorized"
           },
           "403": {
-            "description": "Not a participant of this conversation"
+            "description": "Forbidden"
           },
           "404": {
-            "description": "Conversation not found"
+            "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error",
@@ -6615,12 +5927,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
-        "summary": "Mark messages as read",
         "tags": [
           "Chat"
         ]
@@ -6851,11 +6157,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Unified search across users, posts, and hashtags",
         "tags": [
           "Search"
@@ -6996,11 +6297,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get search suggestions",
         "tags": [
           "Search"
@@ -7097,11 +6393,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get trending searches",
         "tags": [
           "Search"
@@ -7203,11 +6494,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get trending posts for discovery",
         "tags": [
           "Search"
@@ -7296,11 +6582,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get user recommendations",
         "tags": [
           "Search"
@@ -7386,11 +6667,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get hashtag recommendations",
         "tags": [
           "Search"
@@ -7486,11 +6762,6 @@
             }
           }
         },
-        "security": [
-          {
-            "access_token": []
-          }
-        ],
         "summary": "Get \"Who to follow\" suggestions",
         "tags": [
           "Search"
@@ -9219,11 +8490,11 @@
             "type": "string"
           },
           "type": {
+            "type": "string",
             "enum": [
               "direct",
               "group"
-            ],
-            "type": "string"
+            ]
           },
           "name": {
             "type": "string"
@@ -9314,131 +8585,6 @@
         },
         "required": [
           "participantIds"
-        ]
-      },
-      "ReactionDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "emoji": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "reactedAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "emoji",
-          "userId",
-          "reactedAt"
-        ]
-      },
-      "ReadReceiptDto": {
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string"
-          },
-          "readAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "userId",
-          "readAt"
-        ]
-      },
-      "MessageResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          },
-          "type": {
-            "enum": [
-              "text",
-              "image",
-              "video",
-              "audio",
-              "file",
-              "system"
-            ],
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "sent",
-              "delivered",
-              "read",
-              "failed"
-            ],
-            "type": "string"
-          },
-          "conversationId": {
-            "type": "string"
-          },
-          "sender": {
-            "$ref": "#/components/schemas/UserDto"
-          },
-          "replyTo": {
-            "$ref": "#/components/schemas/UserDto"
-          },
-          "media": {
-            "type": "string"
-          },
-          "reactions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ReactionDto"
-            }
-          },
-          "readReceipts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ReadReceiptDto"
-            }
-          },
-          "metadata": {
-            "type": "object"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "deletedForUserAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "deletedForUserId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "content",
-          "type",
-          "status",
-          "conversationId",
-          "sender",
-          "reactions",
-          "readReceipts",
-          "createdAt",
-          "updatedAt"
         ]
       }
     }
