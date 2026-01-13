@@ -172,28 +172,32 @@ export class ChatService {
     conversationId: string,
     userId: string,
   ): Promise<ConversationResponseDto> {
-    try {
-      const conversation = await this.conversationRepo
-        .createQueryBuilder('conversation')
-        .leftJoinAndSelect('conversation.participants', 'participant')
-        .leftJoinAndSelect('participant.user', 'user')
-        .leftJoinAndSelect('conversation.createdBy', 'createdBy')
-        .where('conversation.id = :conversationId', { conversationId })
-        .andWhere('participant.userId = :userId', { userId })
-        .andWhere('participant.isActive = :isActive', { isActive: true })
-        .getOne();
+    const conversation = await this.conversationRepo
+      .createQueryBuilder('conversation')
+      .leftJoinAndSelect('conversation.participants', 'participant')
+      .leftJoinAndSelect('participant.user', 'user')
+      .leftJoinAndSelect('conversation.createdBy', 'createdBy')
+      .where('conversation.id = :conversationId', { conversationId })
+      .andWhere(
+        `
+      EXISTS (
+        SELECT 1 FROM conversation_participant cp
+        WHERE cp."conversationId" = conversation.id
+        AND cp."userId" = :userId
+        AND cp."isActive" = true
+      )
+    `,
+      )
+      .setParameter('userId', userId)
+      .getOne();
 
-      if (!conversation) {
-        throw new NotFoundException('Conversation not found or access denied');
-      }
-
-      return plainToInstance(ConversationResponseDto, conversation, {
-        excludeExtraneousValues: true,
-      });
-    } catch (error) {
-      this.logger.error(`Error getting conversation: ${error.message}`);
-      throw error;
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found or access denied');
     }
+
+    return plainToInstance(ConversationResponseDto, conversation, {
+      excludeExtraneousValues: true,
+    });
   }
 
   //TODO ==================== UPDATE CONVERSATION ====================

@@ -234,6 +234,25 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  //TODO ==================== ONLINE STATUS ====================
+  @SubscribeMessage('get_online_users')
+  handleGetOnlineUsers(@ConnectedSocket() socket: AuthenticatedSocket) {
+    const onlineUsers = this.getOnlineUsers();
+    socket.emit('online_users', { onlineUsers: onlineUsers });
+  }
+  //TODO ==================== IS USER ONLINE ====================
+  @SubscribeMessage('is_user_online')
+  handleIsUserOnline(
+    @ConnectedSocket() socket: AuthenticatedSocket,
+    @MessageBody() data: { userId: string },
+  ) {
+    const isOnline = this.isUserOnline(data.userId);
+    socket.emit('user_online_status', {
+      userId: data.userId,
+      isOnline: isOnline,
+    });
+  }
+
   //TODO ==================== MESSAGE REACTION ====================
   @SubscribeMessage('add_reaction')
   async handleAddReaction(
