@@ -524,7 +524,6 @@ export class MessagesService {
       if (messageAge > editTimeLimit) {
         throw new BadRequestException('Message is too old to edit');
       }
-
       //* 3. Update message content
       await queryRunner.manager.update(
         Message,
