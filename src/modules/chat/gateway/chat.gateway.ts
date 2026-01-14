@@ -36,7 +36,7 @@ interface AuthenticatedSocket extends Socket {
 )
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: '*',
     credentials: true,
   },
   namespace: '/chat',
@@ -182,7 +182,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           conversationId: data.conversationId,
           message: message,
         });
-
       //* 4.Notify participants who are not in the conversation room
       for (const participantId of participantIds) {
         const isInRoom = this.isUserInConversationRoom(
@@ -202,6 +201,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         `Message sent in conversation ${data.conversationId} by user ${socket.user.userId}`,
       );
     } catch (error) {
+      console.log(error);
       this.logger.error(`Error sending message: ${error.message}`);
       socket.emit('error', { message: 'Failed to send message' });
     }
@@ -348,20 +348,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     userId: string,
     conversationId: string,
   ): boolean {
-    const userSockets = this.userSockets.get(userId);
-    if (!userSockets?.size) return false;
+    const userSocket = this.userSockets.get(userId);
+    if (!userSocket?.size) return false;
 
     const conversationRoom = `conversation:${conversationId}`;
 
     //* 1.Single responsibility: Check if ANY socket is in room
-    return Array.from(userSockets).some((socketId) =>
+    return Array.from(userSocket).some((socketId) =>
       this.isSocketInRoom(socketId, conversationRoom),
     );
   }
 
   private isSocketInRoom(socketId: string, room: string): boolean {
-    const socket = this.server.sockets.sockets.get(socketId);
-    return socket?.rooms.has(room) ?? false;
+    const adapter = (this.server as any).adapter;
+    const roomMembers = adapter?.rooms?.get(room);
+    return roomMembers?.has(socketId) ?? false;
   }
 
   //* Get online status of users
@@ -382,7 +383,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const tokenCookie = cookies
         .split(';')
         .find((c) => c.trim().startsWith('access_token='));
-      if (tokenCookie) return tokenCookie.split('=')[1];
+      if (tokenCookie)
+        return tokenCookie.substring(tokenCookie.indexOf('=') + 1);
     }
     //* 2. Try socket.io auth payload
     const authToken = client.handshake.auth?.token as string;

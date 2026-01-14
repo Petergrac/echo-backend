@@ -12,6 +12,8 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ChatService } from '../services/chat.service';
@@ -21,6 +23,8 @@ import { CreateConversationDto } from '../dto/create-conversation.dto';
 import { UpdateConversationDto } from '../dto/update-dtos/update-conversation.dto';
 import { AddParticipantsDto } from '../dto/update-dtos/add-participants.dto';
 import type { Request } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { SendMessageDto } from '../dto/send-message.dto';
 @ApiTags('Chat')
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -60,6 +64,17 @@ export class ChatController {
     return this.chatService.getConversation(conversationId, userId);
   }
 
+  @Post('conversations/:id/messages')
+  @UseInterceptors(FileInterceptor('file'))
+  async sendMessage(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) conversationId: string,
+    @Body() body: SendMessageDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const userId = (req.user as { userId: string }).userId;
+    return this.messagesService.sendMessage(conversationId, userId, body, file);
+  }
   @Patch('conversations/:id')
   async updateConversation(
     @Req() req: Request,
