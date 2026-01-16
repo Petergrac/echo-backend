@@ -11,85 +11,276 @@
 **A production-ready social media backend that powers modern social experiences**
 
 </div>
+Echo Backend is a **NestJS-based REST API** that powers the Echo social media platform. It provides authentication, user management, content creation, social interactions, and real-time–ready endpoints used by the Next.js web client and Flutter mobile client.
 
-## ✨ What is Echo?
-
-Echo is a comprehensive social media backend built with NestJS and TypeScript. It's designed to handle everything you need for a modern social platform—authentication, real-time chat, content feeds, and engagement features. Think of it as the engine that can power your own Twitter, Instagram, or Threads-like application.
-
-## 🚀 Why Choose Echo?
-
-### 🔥 Built for Real-World Use
-
-- **Production-ready**: Battle-tested architecture ready for deployment
-- **Comprehensive feature set**: Everything from authentication to real-time notifications
-- **Developer experience**: Clean codebase with comprehensive documentation
-- **Scalable design**: Handles everything from small projects to large platforms
-
-### 🛠️ Everything You Need for Social Media
-
-#### 📱 Core Features
-
-- **User Management**: Complete user profiles with avatars, bios, and social connections
-- **Content System**: Create posts with text and media, replies, and reposts
-- **Smart Feeds**: Algorithmic, trending, discover, and following feeds
-- **Real-time Chat**: Direct messages and group conversations
-- **Engagement Engine**: Likes, bookmarks, follows, and hashtags
-- **Notification System**: Real-time alerts for social interactions
-- **Search & Discovery**: Unified search across users, posts, and hashtags
-
-#### 🔐 Security & Reliability
-
-- **Secure Authentication**: JWT with refresh tokens and email verification
-- **Rate Limiting**: Protection against abuse and excessive requests
-- **Input Validation**: Comprehensive validation on all endpoints
-- **Audit Logging**: Track important actions throughout the system
-- **Error Handling**: Graceful error responses with proper logging
-
-
-## 🔐 Authentication Model
-
-Echo uses **cookie-based authentication**, not Bearer tokens.
-
-### Key Characteristics
-
-- ✅ Access token → **HttpOnly cookie**
-- ✅ Refresh token → **HttpOnly cookie**
-- ❌ No tokens returned in JSON responses
-- ❌ No `Authorization: Bearer` headers
-- ❌ No `localStorage` / `sessionStorage`
-- ✅ Tokens are automatically sent by the browser
-
-This model is **secure by default** and protects against:
-
-- XSS token theft
-- Accidental token leaks
-- Frontend misuse
+The project is designed with scalability, security, and clean architecture in mind.
 
 ---
 
-## 🧠 Intended Clients
+## Features
 
-| Client Type                                    | Supported |
-| ---------------------------------------------- | --------- |
-| Browser-based apps (React, Next.js, Vue, etc.) | ✅        |
-| Swagger UI                                     | ✅        |
-| Postman / curl                                 | ❌        |
-| Mobile apps                                    | ❌        |
-| Server-to-server APIs                          | ❌        |
+### Authentication
 
-> ⚠️ **This API is browser-first**.  
-> It is not designed for direct consumption by non-browser clients.
+- User registration and login
+- JWT-based authentication using **HttpOnly cookies**
+- Access & refresh token flow
+- Protected routes with guards
+
+### Users
+
+- Profile management
+- Follow / unfollow
+- User discovery
+
+### Content
+
+- Create, read, update, delete posts
+- Replies / threaded conversations
+- Likes and bookmarks
+- Feed endpoints
+
+### Social & System
+
+- Notifications
+- Role-based access control (where applicable)
+- Input validation and DTOs
+- Modular architecture
+
+### API & Tooling
+
+- OpenAPI / Swagger specification (`openapi-spec.json`)
+- Structured logging
+- Centralized error handling
 
 ---
 
-## 🔑 Auth Flow Overview
+## Tech Stack
 
-### 1️⃣ Login
+- **NestJS** – backend framework
+- **TypeScript** – language
+- **PostgreSQL** – database
+- **Prisma / TypeORM** – ORM (depending on current module usage)
+- **JWT** – authentication
+- **Passport** – auth strategies
+- **Swagger / OpenAPI** – API documentation
 
-- Validates user credentials
-- Sets cookies:
-  - `access_token` (short-lived)
-  - `refresh_token` (long-lived)
-- Response body may be empty or contain user metadata
+---
 
-### You can also return access token on `login` & `token rotation` if you want to attach this backend to a mobile application
+## Project Structure
+
+```
+src/
+├── modules/        # Feature modules (auth, users, posts, etc.)
+├── common/         # Guards, decorators, interceptors, filters
+├── config/         # App and environment configuration
+├── database/       # ORM setup and migrations
+├── main.ts         # App bootstrap
+
+prisma/ or migrations/   # Database schema & migrations
+test/                   # Unit & integration tests
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16+ recommended)
+- PostgreSQL
+- pnpm / npm / yarn
+
+---
+
+### Installation
+
+```bash
+git clone https://github.com/Petergrac/echo-backend.git
+cd echo-backend
+```
+
+```bash
+pnpm install
+# or npm install
+# or yarn
+```
+
+---
+
+## Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/echo
+JWT_ACCESS_SECRET=your_access_secret
+JWT_REFRESH_SECRET=your_refresh_secret
+CLIENT_URL=http://localhost:3000
+PORT=4000
+```
+
+Add other variables as required by your setup (Redis, email service, etc.).
+
+---
+
+## Database Setup
+
+### Migrations
+
+```bash
+pnpm prisma migrate dev
+# or equivalent TypeORM command
+```
+
+### Seeding (if available)
+
+```bash
+pnpm prisma db seed
+```
+
+---
+
+## Running the Server
+
+### Development
+
+```bash
+pnpm start:dev
+```
+
+### Production
+
+```bash
+pnpm build
+pnpm start
+```
+
+Server will run on:
+
+```
+http://localhost:4000
+```
+
+---
+
+## API Documentation
+
+If Swagger is enabled, access it at:
+
+```
+http://localhost:4000/api/docs
+```
+
+You can also refer to the generated OpenAPI spec:
+
+```
+openapi-spec.json
+```
+
+---
+
+## Authentication Model
+
+Echo uses **cookie-based JWT authentication**:
+
+- Access token stored in HttpOnly cookie
+- Refresh token stored in HttpOnly cookie
+- Automatic refresh flow
+- CSRF protection via same-site cookies
+
+This approach is optimized for browser clients (Next.js) and mobile apps (Flutter).
+
+---
+
+## Available Scripts
+
+| Command        | Description              |
+| -------------- | ------------------------ |
+| pnpm start:dev | Start development server |
+| pnpm build     | Build production bundle  |
+| pnpm start     | Start production server  |
+| pnpm test      | Run tests                |
+| pnpm lint      | Run linter               |
+
+---
+
+## Testing
+
+```bash
+pnpm test
+```
+
+Tests include unit and integration coverage for core modules such as auth and users.
+
+---
+
+## Clients Supported
+
+| Client                      | Status    |
+| --------------------------- | --------- |
+| Next.js Web App             | Supported |
+| Flutter Mobile App          | Supported |
+| REST Clients (Postman/Curl) | Supported |
+
+---
+
+## Deployment
+
+You can deploy on:
+
+- Railway
+- Render
+- Fly.io
+- VPS (Docker or PM2)
+
+Steps:
+
+1. Set environment variables
+2. Run migrations
+3. Build the project
+4. Start the server
+
+Docker setup can be added for production environments.
+
+---
+
+## Security
+
+- Password hashing
+- Input validation with DTOs
+- JWT expiration & refresh flow
+- CORS configuration
+- HTTP-only cookies
+- Role-based guards (where used)
+
+---
+
+## Roadmap
+
+- WebSocket or Ably-based real-time messaging
+- Media uploads
+- Advanced notifications
+- Search improvements
+- Rate limiting
+- Caching layer
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit changes
+4. Open a pull request
+
+---
+
+## Related Projects
+
+- Frontend (Next.js): [https://github.com/Petergrac/echo-web](https://github.com/Petergrac/echo-web)
+
+---
+
+## License
+
+MIT (or specify your license)
