@@ -27,12 +27,12 @@ import { NotificationPreferences } from '../src/modules/notifications/entities/n
 
 class DatabaseSeeder {
   private dataSource: DataSource;
-  private readonly TOTAL_USERS = 200;
-  private readonly POSTS_PER_USER = 40;
-  private readonly MAX_FOLLOWS_PER_USER = 50;
-  private readonly MAX_LIKES_PER_POST = 25;
-  private readonly MAX_REPLIES_PER_POST = 15;
-  private readonly MAX_REPOSTS_PER_POST = 10;
+  private readonly TOTAL_USERS = 20;
+  private readonly POSTS_PER_USER = 5;
+  private readonly MAX_FOLLOWS_PER_USER = 10;
+  private readonly MAX_LIKES_PER_POST = 5;
+  private readonly MAX_REPLIES_PER_POST = 3;
+  private readonly MAX_REPOSTS_PER_POST = 2;
 
   // Popular hashtags for realistic content
   private readonly POPULAR_HASHTAGS = [
@@ -111,7 +111,10 @@ class DatabaseSeeder {
       ],
 
       synchronize: false,
-      logging: true,
+      logging: false,
+      ssl: {
+        rejectUnauthorized: false,
+      },
     });
   }
 
@@ -759,7 +762,7 @@ class DatabaseSeeder {
       await this.clearDatabase();
 
       const users = await this.createUsers();
-      await this.createNotificationPreferences(users)
+      await this.createNotificationPreferences(users);
       await this.createFollows(users);
 
       const hashtags = await this.createHashtags();

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ArcjetModule, detectBot, fixedWindow, shield } from '@arcjet/nest';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CommonModule } from './common/module/common.module';
@@ -30,7 +30,7 @@ import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
       url: process.env.DATABASE_URL,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: process.env.NODE_ENV === 'development',
-      logging: process.env.NODE_ENV === 'production',
+      logging: process.env.NODE_ENV === 'development',
       migrations: ['src/migrations/*.ts'],
       migrationsRun: process.env.NODE_ENV === 'production',
     }),
@@ -63,18 +63,18 @@ import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
     }),
     CacheModule.registerAsync({
       isGlobal: true,
-      useFactory: () => {
+      useFactory: (cfg: ConfigService) => {
         return {
           //* Using multiple stores
           stores: [
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             new Keyv({
               store: new CacheableMemory({ ttl: 60000, lruSize: 5000 }),
             }),
-            new KeyvRedis('redis://localhost:6379'),
+            new KeyvRedis(cfg.get<string>('REDIS_URL')),
           ],
         };
       },
+      inject: [ConfigService],
     }),
     ScheduleModule.forRoot(),
     CommonModule,

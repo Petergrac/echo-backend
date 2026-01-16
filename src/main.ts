@@ -33,7 +33,7 @@ async function bootstrap() {
    * TODO==================  CONFIGURING CORS =============
    */
   app.enableCors({
-    origin: [`http://localhost:3001`, 'http://10.240.158.157:3001'],
+    origin: [`${process.env.FRONTEND_URL}` || 'http://localhost:3001'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
