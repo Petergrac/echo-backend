@@ -10,6 +10,21 @@ import {
 import { UserDto } from './user-response.dto';
 import { MessageStatus, MessageType } from '../../entities/message.entity';
 
+class MediaInfo {
+  @Expose()
+  url: string;
+  @Expose()
+  publicId: string;
+  @Expose()
+  type: string;
+  @Expose()
+  width: number;
+  @Expose()
+  height: number;
+  @Expose()
+  fileSize: number;
+}
+
 export class ReactionDto {
   @Expose()
   @IsString()
@@ -70,8 +85,8 @@ export class MessageResponseDto {
 
   @Expose()
   @IsOptional()
-  @IsString()
-  media?: string;
+  @IsObject()
+  media?: MediaInfo;
 
   @Expose()
   @Type(() => ReactionDto)

@@ -108,7 +108,7 @@ export class MessagesService {
         mediaInfo = {
           url: uploadResult.secure_url || uploadResult.url,
           publicId: uploadResult.public_id,
-          type: uploadResult.resource_type,
+          type: file.mimetype,
           width: uploadResult.width,
           height: uploadResult.height,
           fileSize: uploadResult.bytes,
