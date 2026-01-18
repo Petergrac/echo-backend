@@ -30,7 +30,7 @@ import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
       url: process.env.DATABASE_URL,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: process.env.NODE_ENV === 'development',
-      logging: process.env.NODE_ENV === 'production',
+      logging: process.env.NODE_ENV === 'development',
       migrations: ['src/migrations/*.ts'],
       migrationsRun: process.env.NODE_ENV === 'production',
     }),
