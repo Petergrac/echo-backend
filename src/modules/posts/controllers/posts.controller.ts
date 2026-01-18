@@ -211,7 +211,6 @@ export class PostsController {
     @Req() req: Request,
   ) {
     const userId = (req.user as { userId: string }).userId;
-    console.log(userId);
     const ip = req.ip;
     const userAgent = req.get('user-agent');
     return this.postsService.updatePost(

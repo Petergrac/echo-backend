@@ -45,6 +45,7 @@ export class UsersService {
         .createQueryBuilder('user')
         .loadRelationCountAndMap('user.followersCount', 'user.followers')
         .loadRelationCountAndMap('user.followingCount', 'user.following')
+        .loadRelationCountAndMap('user.postCount', 'user.posts')
         .where('user.id = :id', { id: userId })
         .getOne();
 
@@ -159,9 +160,7 @@ export class UsersService {
       let resourceType: string | null = '';
 
       //* 2. Upload the avatar to cloudinary
-      console.log('outside log');
       if (file) {
-        console.log('inside log');
         const uploadResult = (await this.cloudinary.uploadImage(file)) as {
           url: string;
           secure_url: string;

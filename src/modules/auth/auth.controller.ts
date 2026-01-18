@@ -225,7 +225,11 @@ export class AuthController {
     const refreshToken = getRefreshToken(req);
     if (!refreshToken) {
       //! Unauthorized if no refresh token provided
-      return res.status(401).json({ message: 'No refresh token provided' });
+      if (!refreshToken) {
+        res.clearCookie('refresh_token');
+        res.clearCookie('access_token');
+        return res.status(401).json({ message: 'No refresh token provided' });
+      }
     }
 
     const ip = req.ip;
@@ -293,7 +297,6 @@ export class AuthController {
       //! Clear cookie
       res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'strict' });
       res.clearCookie('access_token', { httpOnly: true, sameSite: 'lax' });
-
       return { success: true };
     }
   }
@@ -455,7 +458,7 @@ export class AuthController {
 export class MailTestController {
   constructor(private readonly mailer: MailService) {}
 
-  @ApiExcludeEndpoint() // Hide this endpoint in production
+  @ApiExcludeEndpoint()
   @Get('test')
   async sendTest(@Query('to') to: string) {
     await this.mailer.sendVerificationEmail(to, 'lksdflksdajflksda', 'Peter');

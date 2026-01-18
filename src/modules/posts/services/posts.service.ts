@@ -503,7 +503,6 @@ export class PostsService {
         .where('f.followerId = :viewerId', { viewerId })
         .andWhere('f.followingId = :authorId', { authorId: post.author.id })
         .getCount();
-      console.log(isFollowing);
       return isFollowing > 0;
     }
     return false;

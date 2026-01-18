@@ -258,7 +258,6 @@ export class AuthService {
       const valid = await argon2.verify(tokenRecord.tokenHash, token);
       if (!valid) throw new ForbiddenException('Invalid token');
 
-      console.log(tokenRecord.user.id);
       //* 3.Update user password
       await this.userRepo.save({
         id: tokenRecord.user.id,
