@@ -33,7 +33,12 @@ async function bootstrap() {
    * TODO==================  CONFIGURING CORS =============
    */
   app.enableCors({
-    origin: [`${process.env.FRONTEND_URL}` || 'http://localhost:3001'],
+    origin: [
+      `${process.env.FRONTEND_URL}`,
+      'http://localhost:3001',
+      'http://10.40.28.54:3001',
+      process.env.SENTRY_DNS ? 'https://sentry.io' : '',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

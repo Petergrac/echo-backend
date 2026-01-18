@@ -44,7 +44,7 @@ interface OnlineUser {
 )
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: '*',
     credentials: true,
   },
   transports: ['websocket', 'polling'],
@@ -275,7 +275,6 @@ export class NotificationsGateway
   private extractTokenFromHeader(client: Socket): string | undefined {
     //* 1.Try cookies
     const cookies = client.handshake.headers.cookie;
-    console.log(client.handshake.headers);
     if (cookies) {
       const tokenCookie = cookies
         .split(';')

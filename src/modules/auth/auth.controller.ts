@@ -284,8 +284,8 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'No valid session found' })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Get('logout')
+  @HttpCode(HttpStatus.OK)
+  @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = (req.cookies as { refresh_token: string | undefined })
       .refresh_token;

@@ -216,33 +216,48 @@ export class TokenService {
    *TODO ======================= REVOKE A SPECIFIC TOKEN METHOD =================
    *
    */
-  async revokeRefreshToken(compoundToken: string) {
+  /**
+   * Revoke specific refresh token (for logout)
+   */
+  async revokeRefreshToken(compoundToken: string, userId?: string) {
     const [tokenId, plain] = compoundToken.split('.');
-    if (!tokenId || !plain) throw new ForbiddenException('Invalid token');
+    if (!tokenId || !plain) {
+      //* If invalid format, just revoke all for user if userId provided
+      if (userId) {
+        await this.revokeAllForUser(userId);
+        return;
+      }
+      throw new ForbiddenException('Invalid token');
+    }
 
-    //* 1.Find a given token based on the token Id
-    const candidate = await this.refreshTokenRepo.findOneBy({ tokenId });
-    if (!candidate) throw new ForbiddenException('Invalid refresh token');
-    // * 2.Verify the user refresh token id with that in the database
+    //* 1. Find the token
+    const candidate = await this.refreshTokenRepo.findOne({
+      where: { tokenId },
+      relations: ['user'],
+    });
+
+    if (!candidate) {
+      //* Token doesn't exist, that's fine for logout
+      return;
+    }
+
+    //* 2. Verify the token
     const ok = await argon2
       .verify(candidate.hashedToken, plain)
       .catch(() => false);
-    //* 3.revoke specific token candidate & audit
+
+    //* 3. Revoke it
     if (ok) {
       await this.refreshTokenRepo.update(
         { id: candidate.id },
         { revoked: true, lastUsedAt: new Date() },
       );
       await this.auditService.createLog({
-        action: AuditAction.REFRESH_TOKEN_ROTATED,
+        action: AuditAction.LOGOUT,
         resource: AuditResource.AUTH,
-        metadata: {
-          userId: candidate.id,
-        },
+        userId: candidate.user.id,
       });
-      return;
     }
-    throw new ForbiddenException('Invalid or Expired Token on Logout');
   }
   /*
    * //TODO ======================= CREATE EMAIL TOKEN =================
