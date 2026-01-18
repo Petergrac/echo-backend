@@ -78,7 +78,7 @@ export class AuthController {
       //* Refresh token cookie
       res.cookie('refresh_token', response.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true,
         sameSite: 'strict',
         maxAge: response.refreshExpiresAt.getTime() - Date.now(),
         path: '/',
@@ -87,13 +87,13 @@ export class AuthController {
       //* Access token cookie
       res.cookie('access_token', response.accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: true,
+        sameSite: 'none',
         maxAge: 1000 * 60 * 15,
         path: '/',
       });
 
-      return;
+      return { message: 'Signup Complete', access_token: response.accessToken };
     }
   }
 
@@ -151,19 +151,19 @@ export class AuthController {
       await this.authService.login(dto, ip, userAgent);
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'strict',
       maxAge: refreshExpiresAt.getTime() - Date.now(),
       path: '/',
     });
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       maxAge: 1000 * 60 * 15,
       path: '/',
     });
-    return;
+    return { message: 'Login Successfully', access_token: accessToken };
   }
 
   /**
@@ -225,11 +225,7 @@ export class AuthController {
     const refreshToken = getRefreshToken(req);
     if (!refreshToken) {
       //! Unauthorized if no refresh token provided
-      if (!refreshToken) {
-        res.clearCookie('refresh_token');
-        res.clearCookie('access_token');
-        return res.status(401).json({ message: 'No refresh token provided' });
-      }
+      return res.status(401).json({ message: 'No refresh token provided' });
     }
 
     const ip = req.ip;
@@ -250,7 +246,7 @@ export class AuthController {
 
     res.cookie('refresh_token', newRefreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'strict',
       maxAge: expiresAt.getTime() - Date.now(),
       path: '/',
@@ -258,14 +254,15 @@ export class AuthController {
     //* Access token cookie
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       maxAge: 1000 * 60 * 15,
       path: '/',
     });
     return {
       success: true,
       message: 'Token rotated',
+      access_token: accessToken,
     };
   }
 
@@ -296,8 +293,9 @@ export class AuthController {
       await this.tokenService.revokeRefreshToken(refreshToken);
       //! Clear cookie
       res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'strict' });
-      res.clearCookie('access_token', { httpOnly: true, sameSite: 'lax' });
-      return { success: true };
+      res.clearCookie('access_token', { httpOnly: true, sameSite: 'none' });
+
+      return { success: true, message: 'Logged out successfully' };
     }
   }
 
@@ -334,8 +332,8 @@ export class AuthController {
       const { userId } = req.user as { userId: string };
       await this.tokenService.revokeAllForUser(userId);
       res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'strict' });
-      res.clearCookie('access_token', { httpOnly: true, sameSite: 'lax' });
-      return { success: true };
+      res.clearCookie('access_token', { httpOnly: true, sameSite: 'none' });
+      return { success: true, message: 'Logged out on all logged in devices' };
     } catch (error) {
       console.log(error);
       throw error;
