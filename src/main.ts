@@ -1,9 +1,8 @@
 import './instruments';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import pinoHttp, { Options } from 'pino-http';
+import pinoHttp from 'pino-http';
 import helmet from 'helmet';
-import { IncomingMessage } from 'http';
 import { AllExceptionsFilter } from './common/filters/custom-all-filter.filter';
 import { ConsoleLogger, ValidationPipe, VersioningType } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
@@ -11,6 +10,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { swaggerOptions } from './swagger.config';
+import { getLoggerConfig } from './logger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -46,28 +46,8 @@ async function bootstrap() {
   /**
    * TODO==================  PINO OPTIONS & MIDDLEWARE =============
    */
-  const options: Options = {
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
-        ignore: 'pid,hostname,req.headers,res.headers',
-        translateTime: 'HH:MM:ss.l',
-      },
-    },
-    serializers: {
-      req: (req: IncomingMessage & { id?: string }) => ({
-        id: req.id,
-        method: req.method,
-        url: req.url,
-        headers: {
-          'user-agent': req.headers['user-agent'] as string,
-          authorization: req.headers['authorization'],
-        },
-      }),
-    },
-  };
-  const loggerMiddleware = pinoHttp(options);
+
+  const loggerMiddleware = pinoHttp(getLoggerConfig());
   app.use(loggerMiddleware);
 
   /**

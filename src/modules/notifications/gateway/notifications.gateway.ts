@@ -105,7 +105,11 @@ export class NotificationsGateway
         message: 'Connected to notifications',
         userId: user.sub,
       });
-
+      const response = await this.prefService.getUserPreferences(user.sub);
+      client.emit('sound_settings', {
+        soundEnabled: response.soundEnabled,
+        vibrationEnabled: response.vibrationEnabled,
+      });
       //* 4.Send initial unread count
       const unreadCount = await this.notificationsService.getUnreadCount(
         user.sub,
@@ -246,7 +250,9 @@ export class NotificationsGateway
   async getUserPreferences(@ConnectedSocket() client: Socket) {
     const user = client.data.user as { sub: string };
     const response = await this.prefService.getUserPreferences(user.sub);
-    return { mutedUsers: response.mutedUsers };
+    return {
+      mutedUsers: response.mutedUsers,
+    };
   }
   //TODO ================== RESET PREFERENCES ===============
   @SubscribeMessage('reset_notifications')

@@ -165,7 +165,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         socket.user.userId,
         data.message,
       );
-
       //* 2.Get conversation participants
       const conversation = await this.chatService.getConversation(
         data.conversationId,
