@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -231,8 +232,8 @@ export class UsersController {
   @Get('active/all-users')
   async getAllUsers(
     @Req() req: Request,
-    @Param('page') page: number,
-    @Param('limit') limit: number,
+    @Query('page') page: number,
+    @Query('limit') limit: number,
   ) {
     const userId = (req.user as { userId: string }).userId;
     const ip = req.ip;
