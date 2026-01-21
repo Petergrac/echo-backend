@@ -3,10 +3,11 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from '../auth/dto/user-response.dto';
@@ -20,6 +21,7 @@ import { Follow } from './follow/entities/follow.entity';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     private readonly cloudinary: CloudinaryService,
@@ -273,6 +275,58 @@ export class UsersService {
     } catch (error) {
       console.log(error);
       throw error;
+    }
+  }
+  /**
+   * TODO =============== GET ALL USERS FOR CONVERSATION ==============
+   * @Param userId
+   *
+   */
+  async getAllUsers(
+    userId: string,
+    page: number,
+    limit: number,
+    ip?: string,
+    userAgent?: string,
+  ) {
+    {
+      try {
+        const [users, totalUsers] = await this.userRepo.findAndCount({
+          where: { id: Not(userId), isBanned: false },
+          skip: (page - 1) * limit,
+          take: limit,
+          select: {
+            id: true,
+            username: true,
+            avatar: true,
+            firstName: true,
+            lastName: true,
+          },
+        });
+        //* Audit
+        await this.auditService.createLog({
+          action: AuditAction.PROFILE_VIEWED,
+          resource: AuditResource.USER,
+          ip,
+          userAgent,
+          userId,
+        });
+        const usersTransformed = plainToInstance(UserResponseDto, users, {
+          excludeExtraneousValues: true,
+        });
+        return {
+          users: usersTransformed,
+          pagination: {
+            totalPages: Math.ceil(totalUsers / limit),
+            currentPage: page,
+            hasPreviousPage: page > 1,
+            hasNextPage: page * limit < totalUsers,
+            totalItems: totalUsers,
+          },
+        };
+      } catch (error) {
+        this.logger.log(`Failed to get users :`, error.message);
+      }
     }
   }
 }
