@@ -231,8 +231,8 @@ export class UsersController {
   @Get('active/all-users')
   async getAllUsers(
     @Req() req: Request,
-    @Param('page') page: number = 1,
-    @Param('limit') limit: number = 15,
+    @Param('page') page: number,
+    @Param('limit') limit: number,
   ) {
     const userId = (req.user as { userId: string }).userId;
     const ip = req.ip;

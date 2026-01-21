@@ -284,8 +284,8 @@ export class UsersService {
    */
   async getAllUsers(
     userId: string,
-    page: number,
-    limit: number,
+    page: number = 1,
+    limit: number = 15,
     ip?: string,
     userAgent?: string,
   ) {
