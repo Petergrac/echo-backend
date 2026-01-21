@@ -228,11 +228,11 @@ export class UsersController {
     const userAgent = req.get('user-agent');
     return await this.usersService.deleteAccount(userId, ip, userAgent);
   }
-  @Get('all-users')
+  @Get('active/all-users')
   async getAllUsers(
     @Req() req: Request,
-    @Param('page') page: number,
-    @Param('limit') limit: number,
+    @Param('page') page: number = 1,
+    @Param('limit') limit: number = 15,
   ) {
     const userId = (req.user as { userId: string }).userId;
     const ip = req.ip;
